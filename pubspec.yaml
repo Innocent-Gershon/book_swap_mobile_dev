@@ -1,0 +1,54 @@
+name: book_swap
+description: A book swapping app built with Flutter and Firebase.
+publish_to: 'none' # Prevent accidental publishing
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase Core
+  firebase_core: ^2.25.4
+  firebase_auth: ^4.17.4
+  cloud_firestore: ^4.15.4
+  firebase_storage: ^11.6.5 # For book cover images
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5 # For code generation with Riverpod
+
+  # Navigation
+  go_router: ^13.0.1 # Recommended for declarative navigation
+
+  # UI/UX Enhancements
+  cached_network_image: ^3.3.1 # For efficient image loading
+  image_picker: ^1.0.7 # For picking book cover images
+  flutter_spinkit: ^5.2.0 # For loading indicators
+  intl: ^0.18.1 # For date formatting, useful for chat timestamps
+  uuid: ^4.3.3 # For generating unique IDs (e.g., for book IDs)
+  google_fonts: ^6.1.0 # For custom fonts
+  dartz: ^0.10.1 # For functional programming features (Either type)
+
+  # Utilities
+  logger: ^2.0.2+1 # For better logging
+  freezed_annotation: ^2.4.1 # For immutable data models
+  json_annotation: ^4.8.1 # For JSON serialization/deserialization
+  equatable: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.8 # Required for code generation
+  riverpod_generator: ^2.3.9 # Riverpod code generator
+  freezed: ^2.4.7 # Freezed code generator
+  json_serializable: ^6.7.1 # JSON serializable code generator
+
+flutter:
+  uses-material-design: true
+  # assets:
+    # - assets/images/ # We'll put default images or app logo here
