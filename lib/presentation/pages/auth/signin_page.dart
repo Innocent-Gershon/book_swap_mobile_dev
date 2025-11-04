@@ -174,6 +174,18 @@ class _SignInPageState extends ConsumerState<SignInPage>
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E2038),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => context.go('/welcome'),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
