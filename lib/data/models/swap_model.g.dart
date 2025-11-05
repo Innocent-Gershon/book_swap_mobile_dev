@@ -8,6 +8,7 @@ part of 'swap_model.dart';
 
 _$SwapModelImpl _$$SwapModelImplFromJson(Map<String, dynamic> json) =>
     _$SwapModelImpl(
+      id: json['id'] as String?,
       bookId: json['bookId'] as String,
       requesterUserId: json['requesterUserId'] as String,
       ownerUserId: json['ownerUserId'] as String,
@@ -21,6 +22,7 @@ _$SwapModelImpl _$$SwapModelImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$SwapModelImplToJson(_$SwapModelImpl instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'bookId': instance.bookId,
       'requesterUserId': instance.requesterUserId,
       'ownerUserId': instance.ownerUserId,

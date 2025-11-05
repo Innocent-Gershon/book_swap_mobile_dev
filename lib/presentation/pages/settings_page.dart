@@ -128,7 +128,6 @@ class SettingsPage extends ConsumerWidget {
               backgroundColor: AppColors.success,
             ),
           );
-          context.go('/login');
         }
       } catch (e) {
         if (context.mounted) {

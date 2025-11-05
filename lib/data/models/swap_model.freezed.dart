@@ -20,7 +20,6 @@ SwapModel _$SwapModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SwapModel {
-  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get id => throw _privateConstructorUsedError; // Firestore document ID
   String get bookId => throw _privateConstructorUsedError;
   String get requesterUserId => throw _privateConstructorUsedError;
@@ -51,7 +50,7 @@ abstract class $SwapModelCopyWith<$Res> {
       _$SwapModelCopyWithImpl<$Res, SwapModel>;
   @useResult
   $Res call(
-      {@JsonKey(includeFromJson: false, includeToJson: false) String? id,
+      {String? id,
       String bookId,
       String requesterUserId,
       String ownerUserId,
@@ -137,7 +136,7 @@ abstract class _$$SwapModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(includeFromJson: false, includeToJson: false) String? id,
+      {String? id,
       String bookId,
       String requesterUserId,
       String ownerUserId,
@@ -216,7 +215,7 @@ class __$$SwapModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SwapModelImpl extends _SwapModel {
   const _$SwapModelImpl(
-      {@JsonKey(includeFromJson: false, includeToJson: false) this.id,
+      {this.id,
       required this.bookId,
       required this.requesterUserId,
       required this.ownerUserId,
@@ -231,7 +230,6 @@ class _$SwapModelImpl extends _SwapModel {
       _$$SwapModelImplFromJson(json);
 
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
   final String? id;
 // Firestore document ID
   @override
@@ -304,7 +302,7 @@ class _$SwapModelImpl extends _SwapModel {
 
 abstract class _SwapModel extends SwapModel {
   const factory _SwapModel(
-      {@JsonKey(includeFromJson: false, includeToJson: false) final String? id,
+      {final String? id,
       required final String bookId,
       required final String requesterUserId,
       required final String ownerUserId,
@@ -319,7 +317,6 @@ abstract class _SwapModel extends SwapModel {
       _$SwapModelImpl.fromJson;
 
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get id; // Firestore document ID
   @override
   String get bookId;

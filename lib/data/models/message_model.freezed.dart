@@ -20,7 +20,6 @@ MessageModel _$MessageModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$MessageModel {
-  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get id => throw _privateConstructorUsedError; // Firestore document ID
   String get chatId => throw _privateConstructorUsedError;
   String get senderId => throw _privateConstructorUsedError;
@@ -47,7 +46,7 @@ abstract class $MessageModelCopyWith<$Res> {
       _$MessageModelCopyWithImpl<$Res, MessageModel>;
   @useResult
   $Res call(
-      {@JsonKey(includeFromJson: false, includeToJson: false) String? id,
+      {String? id,
       String chatId,
       String senderId,
       String recipientId,
@@ -121,7 +120,7 @@ abstract class _$$MessageModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(includeFromJson: false, includeToJson: false) String? id,
+      {String? id,
       String chatId,
       String senderId,
       String recipientId,
@@ -188,7 +187,7 @@ class __$$MessageModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$MessageModelImpl extends _MessageModel {
   const _$MessageModelImpl(
-      {@JsonKey(includeFromJson: false, includeToJson: false) this.id,
+      {this.id,
       required this.chatId,
       required this.senderId,
       required this.recipientId,
@@ -201,7 +200,6 @@ class _$MessageModelImpl extends _MessageModel {
       _$$MessageModelImplFromJson(json);
 
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
   final String? id;
 // Firestore document ID
   @override
@@ -264,7 +262,7 @@ class _$MessageModelImpl extends _MessageModel {
 
 abstract class _MessageModel extends MessageModel {
   const factory _MessageModel(
-      {@JsonKey(includeFromJson: false, includeToJson: false) final String? id,
+      {final String? id,
       required final String chatId,
       required final String senderId,
       required final String recipientId,
@@ -277,7 +275,6 @@ abstract class _MessageModel extends MessageModel {
       _$MessageModelImpl.fromJson;
 
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
   String? get id; // Firestore document ID
   @override
   String get chatId;
