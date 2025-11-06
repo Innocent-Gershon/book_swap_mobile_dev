@@ -1,23 +1,23 @@
+// presentation/pages/sign_in_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:book_swap/data/services/firebase_service.dart';
+import 'package:book_swap/services/auth_service.dart';
+import 'package:book_swap/widgets/auth_dialogs.dart';
 import 'package:book_swap/presentation/pages/widgets/theme/app_colors.dart';
 import 'package:book_swap/presentation/pages/widgets/theme/app_styles.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-class SignInPage extends ConsumerStatefulWidget {
+class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
 
   @override
-  ConsumerState<SignInPage> createState() => _SignInPageState();
+  State<SignInPage> createState() => _SignInPageState();
 }
 
-class _SignInPageState extends ConsumerState<SignInPage>
-    with SingleTickerProviderStateMixin {
+class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   late AnimationController _glowController;
@@ -26,13 +26,11 @@ class _SignInPageState extends ConsumerState<SignInPage>
   @override
   void initState() {
     super.initState();
-    _glowController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2))
-          ..repeat(reverse: true);
-
+    _glowController = AnimationController(vsync: this, duration: const Duration(seconds: 2))
+      ..repeat(reverse: true);
     _glowAnimation = ColorTween(
-      begin: AppColors.accent.withOpacity(0.6),
-      end: AppColors.primary.withOpacity(0.9),
+      begin: AppColors.accent.withValues(alpha: 0.6),
+      end: AppColors.primary.withValues(alpha: 0.9),
     ).animate(_glowController);
   }
 
@@ -44,194 +42,93 @@ class _SignInPageState extends ConsumerState<SignInPage>
     super.dispose();
   }
 
-  Future<void> _onSignInPressed() async {
+  Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
-    try {
-      final credential = await FirebaseService.signIn(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+    final result = await AuthService.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
 
-      if (credential.user?.emailVerified == false) {
-        if (mounted) {
-          _showEmailVerificationDialog(credential);
-          await FirebaseService.signOut();
-        }
-        return;
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result.isSuccess) {
+      context.go('/browse'); // Navigate to the main app screen after successful sign-in
+    } else {
+      // Use the new AuthResultType for better error handling and specific dialogs
+      switch (result.type) {
+        case AuthResultType.emailNotVerified:
+          AuthDialogs.showEmailNotVerifiedDialog(context);
+          break;
+        case AuthResultType.userNotFound:
+          // Creative dialog prompting user to sign up if account not found
+          AuthDialogs.showNoAccountDialog(context);
+          break;
+        case AuthResultType.wrongPassword:
+          // Creative dialog for incorrect password
+          AuthDialogs.showWrongPasswordDialog(context);
+          break;
+        case AuthResultType.invalidEmail:
+          AuthDialogs.showErrorDialog(context, 'The email address is not valid. Please check and try again.');
+          break;
+        case AuthResultType.error: // Generic error, show the message from AuthService
+        default:
+          AuthDialogs.showErrorDialog(context, result.message);
       }
-
-      if (mounted) context.go('/browse');
-    } on FirebaseAuthException catch (e) {
-      final code = e.code.toLowerCase();
-
-      if (code.contains('user-not-found')) {
-        if (mounted) _showNoAccountDialog();
-      } else if (code.contains('wrong-password')) {
-        if (mounted) _showWrongPasswordDialog();
-      } else if (code.contains('invalid-email')) {
-        if (mounted) _showInvalidEmailDialog();
-      } else {
-        if (mounted) _showGenericErrorDialog(e.message ?? 'Login failed');
-      }
-    } catch (e) {
-      if (mounted) _showGenericErrorDialog('Something went wrong');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showEmailVerificationDialog(UserCredential credential) {
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Please verify your email before signing in.'),
-        content: const Text(
-          'We detected that your email is not yet verified. Check your inbox or spam folder.'
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your email address and we\'ll send you a link to reset your password.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                hintText: 'Email address',
+                prefixIcon: Icon(Icons.email_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
-              try {
-                await credential.user?.sendEmailVerification();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Verification email sent!'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              } catch (e) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to send verification: ${e.toString()}'),
-                    backgroundColor: AppColors.error,
-                  ),
-                );
+              if (emailController.text.isNotEmpty) {
+                Navigator.pop(context); // Dismiss the input dialog
+                final result = await AuthService.resetPassword(emailController.text);
+                if (context.mounted) {
+                  // Show a SnackBar to indicate if the reset link was sent
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.message),
+                      backgroundColor: result.isSuccess ? AppColors.success : AppColors.error,
+                    ),
+                  );
+                }
               }
             },
-            child: const Text('Resend Email'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNoAccountDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.person_off, size: 50, color: AppColors.primary),
-              const SizedBox(height: 16),
-              Text(
-                "No Account Found",
-                style: AppStyles.headline2.copyWith(
-                  color: AppColors.textDark,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "It looks like you don’t have an account. Would you like to create one?",
-                style: AppStyles.bodyText1.copyWith(
-                  color: AppColors.textDark.withOpacity(0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.primary),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        context.go('/signup');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Create Account'),
-                    ),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showWrongPasswordDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Incorrect Password'),
-        content: const Text('The password you entered is incorrect.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Try Again'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showInvalidEmailDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Invalid Email'),
-        content: const Text('The email you entered is not valid.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGenericErrorDialog([String message = 'Login Failed']) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Login Failed'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: const Text('Send Reset Link'),
           ),
         ],
       ),
@@ -240,9 +137,6 @@ class _SignInPageState extends ConsumerState<SignInPage>
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context).size;
-    final isWide = media.width > 500;
-
     return Scaffold(
       backgroundColor: const Color(0xFF1E2038),
       appBar: AppBar(
@@ -250,11 +144,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.go('/welcome'),
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.white,
-            size: 20,
-          ),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
         ),
       ),
       body: SafeArea(
@@ -271,24 +161,17 @@ class _SignInPageState extends ConsumerState<SignInPage>
                     color: AppColors.accent,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.menu_book_rounded,
-                      color: Color(0xFF1E2038), size: 60),
+                  child: const Icon(Icons.menu_book_rounded, color: Color(0xFF1E2038), size: 60),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'BookSwap',
-                  style: AppStyles.headline1.copyWith(
-                    fontSize: isWide ? 32 : 28,
-                    color: Colors.white,
-                  ),
+                  'Welcome Back',
+                  style: AppStyles.headline1.copyWith(fontSize: 28, color: Colors.white),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Swap Your Stories. Connect & Grow.',
-                  style: TextStyle(
-                    color: Colors.grey[300],
-                    fontSize: isWide ? 16 : 14,
-                  ),
+                  'Sign in to continue your book journey',
+                  style: TextStyle(color: Colors.grey[300], fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -302,24 +185,18 @@ class _SignInPageState extends ConsumerState<SignInPage>
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Email',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.5)),
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          prefixIcon: const Icon(Icons.email_outlined,
-                              color: Colors.white),
+                          fillColor: Colors.white.withValues(alpha: 0.1),
+                          prefixIcon: const Icon(Icons.email_outlined, color: Colors.white),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Enter a valid email';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter your email';
+                          if (!value.contains('@') || !value.contains('.')) return 'Enter a valid email';
                           return null;
                         },
                       ),
@@ -330,44 +207,45 @@ class _SignInPageState extends ConsumerState<SignInPage>
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Password',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.5)),
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          prefixIcon: const Icon(Icons.lock_outline,
-                              color: Colors.white),
+                          fillColor: Colors.white.withValues(alpha: 0.1),
+                          prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter your password';
                           return null;
                         },
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => _showForgotPasswordDialog(context),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: AnimatedBuilder(
                           animation: _glowController,
                           builder: (context, child) => ElevatedButton(
-                            onPressed: _isLoading ? null : _onSignInPressed,
+                            onPressed: _isLoading ? null : _signIn,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _glowAnimation.value,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2)
+                                ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                                 : const Text(
                                     'Sign In',
                                     style: TextStyle(
@@ -383,11 +261,8 @@ class _SignInPageState extends ConsumerState<SignInPage>
                       GestureDetector(
                         onTap: () => context.go('/signup'),
                         child: const Text(
-                          "New here? Create an account!",
-                          style: TextStyle(
-                            color: AppColors.accent,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          "Don't have an account? Sign up!",
+                          style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
                         ),
                       )
                     ],

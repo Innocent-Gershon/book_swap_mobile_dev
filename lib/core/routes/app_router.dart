@@ -8,14 +8,10 @@ import 'package:book_swap/presentation/pages/settings_page.dart';
 import 'package:book_swap/presentation/pages/auth/welcome_page.dart';
 import 'package:book_swap/presentation/pages/auth/signin_page.dart';
 import 'package:book_swap/presentation/pages/auth/signup_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:book_swap/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
-  return FirebaseAuth.instance;
-});
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -35,10 +31,9 @@ class AppRoutes {
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final firebaseAuth = ref.watch(firebaseAuthProvider);
-  final isLoggedIn = ValueNotifier<bool>(firebaseAuth.currentUser != null);
+  final isLoggedIn = ValueNotifier<bool>(AuthService.currentUser != null);
 
-  firebaseAuth.authStateChanges().listen((user) {
+  AuthService.userChanges.listen((user) {
     isLoggedIn.value = user != null;
   });
 

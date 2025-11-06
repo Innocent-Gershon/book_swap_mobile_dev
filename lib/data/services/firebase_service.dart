@@ -10,58 +10,21 @@ class FirebaseService {
   /// Get the currently authenticated user
   static User? get currentUser => _auth.currentUser;
 
-  /// Sign up a new user with email and password
-  static Future<UserCredential> signUp(String email, String password) async {
-    final credential = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-
-    // Store user info in Firestore
-    if (credential.user != null) {
-      await _firestore.collection('users').doc(credential.user!.uid).set({
-        'email': email,
-        'createdAt': DateTime.now().toIso8601String(),
-        'emailVerified': false,
-      });
-
-      await credential.user!.sendEmailVerification();
-    }
-
-    return credential;
+  /// Create user profile in Firestore
+  static Future<void> createUserProfile(User user, String name) async {
+    await _firestore.collection('users').doc(user.uid).set({
+      'name': name,
+      'email': user.email,
+      'createdAt': FieldValue.serverTimestamp(),
+      'emailVerified': user.emailVerified,
+    });
   }
 
-  /// Sign in only if the user has verified their email
-  static Future<UserCredential> signIn(String email, String password) async {
-    final credential = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-
-    final user = credential.user;
-
-    if (user != null && !user.emailVerified) {
-      await _auth.signOut();
-      throw FirebaseAuthException(
-        code: 'email-not-verified',
-        message: 'Please verify your email before signing in.',
-      );
-    }
-
-    return credential;
-  }
-
-  /// Sign out user
-  static Future<void> signOut() async {
-    await _auth.signOut();
-  }
-
-  /// Resend email verification link
-  static Future<void> resendEmailVerification() async {
-    final user = _auth.currentUser;
-    if (user != null && !user.emailVerified) {
-      await user.sendEmailVerification();
-    }
+  /// Update user email verification status
+  static Future<void> updateEmailVerificationStatus(String userId, bool verified) async {
+    await _firestore.collection('users').doc(userId).update({
+      'emailVerified': verified,
+    });
   }
 
   // ====================== BOOK OPERATIONS ======================

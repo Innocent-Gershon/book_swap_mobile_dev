@@ -13,7 +13,8 @@ _$MessageModelImpl _$$MessageModelImplFromJson(Map<String, dynamic> json) =>
       senderId: json['senderId'] as String,
       recipientId: json['recipientId'] as String,
       content: json['content'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp:
+          const TimestampConverter().fromJson(json['timestamp'] as Timestamp),
       isRead: json['isRead'] as bool? ?? false,
     );
 
@@ -24,6 +25,6 @@ Map<String, dynamic> _$$MessageModelImplToJson(_$MessageModelImpl instance) =>
       'senderId': instance.senderId,
       'recipientId': instance.recipientId,
       'content': instance.content,
-      'timestamp': instance.timestamp.toIso8601String(),
+      'timestamp': const TimestampConverter().toJson(instance.timestamp),
       'isRead': instance.isRead,
     };

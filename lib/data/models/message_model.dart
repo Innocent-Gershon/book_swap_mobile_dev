@@ -1,6 +1,6 @@
 // lib/data/models/message_model.dart
 import 'package:book_swap/domain/entities/message.dart';
-import 'package:book_swap/data/models/user_model.dart'; // For TimestampConverter
+import 'package:book_swap/data/models/timestamp_converter.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 

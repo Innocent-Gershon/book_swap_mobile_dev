@@ -1,21 +1,22 @@
+// presentation/pages/sign_up_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:book_swap/data/services/firebase_service.dart';
+import 'package:book_swap/services/auth_service.dart';
+import 'package:book_swap/widgets/auth_dialogs.dart';
 import 'package:book_swap/presentation/pages/widgets/theme/app_colors.dart';
 import 'package:book_swap/presentation/pages/widgets/theme/app_styles.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-class SignupPage extends ConsumerStatefulWidget {
+class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
   @override
-  ConsumerState<SignupPage> createState() => _SignupPageState();
+  State<SignupPage> createState() => _SignupPageState();
 }
 
-class _SignupPageState extends ConsumerState<SignupPage>
-    with SingleTickerProviderStateMixin {
+class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -27,18 +28,17 @@ class _SignupPageState extends ConsumerState<SignupPage>
   @override
   void initState() {
     super.initState();
-    _glowController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2))
-          ..repeat(reverse: true);
-
+    _glowController = AnimationController(vsync: this, duration: const Duration(seconds: 2))
+      ..repeat(reverse: true);
     _glowAnimation = ColorTween(
-      begin: AppColors.accent.withOpacity(0.6),
-      end: AppColors.primary.withOpacity(0.9),
+      begin: AppColors.accent.withValues(alpha: 0.6),
+      end: AppColors.primary.withValues(alpha: 0.9),
     ).animate(_glowController);
   }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -49,111 +49,54 @@ class _SignupPageState extends ConsumerState<SignupPage>
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Additional check for password mismatch before calling AuthService
+    if (_passwordController.text != _confirmPasswordController.text) {
+      if (mounted) {
+        AuthDialogs.showErrorDialog(context, 'Passwords do not match. Please ensure both password fields are identical.');
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    try {
-      final credential = await FirebaseService.signUp(
-        _emailController.text.trim(),
-        _passwordController.text,
+    final result = await AuthService.signUp(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result.isSuccess) {
+      // Show success dialog and then navigate to sign-in page, prompting email verification
+      AuthDialogs.showSuccessDialog(
+        context,
+        result.message, // This message comes from AuthService: "Account created! Please verify your email to log in."
+        onOk: () => context.go('/signin'),
       );
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle_outline, size: 50, color: AppColors.primary),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Account Created!',
-                    style: AppStyles.headline2.copyWith(
-                      color: AppColors.textDark,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'We\'ve sent a verification email to:',
-                    style: AppStyles.bodyText1.copyWith(
-                      color: AppColors.textDark.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _emailController.text.trim(),
-                    style: AppStyles.bodyText1.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Please check your email and click the verification link before signing in.',
-                    style: AppStyles.bodyText1.copyWith(
-                      color: AppColors.textDark.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.go('/signin');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Got it'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    } else {
+      // Handle specific error types from AuthService for better user feedback
+      switch (result.type) {
+        case AuthResultType.weakPassword:
+          AuthDialogs.showErrorDialog(context, 'Your password is too weak. Please choose a stronger one with at least 6 characters.');
+          break;
+        case AuthResultType.emailAlreadyInUse:
+          AuthDialogs.showErrorDialog(context, 'This email is already registered. Try signing in or use a different email address.');
+          break;
+        case AuthResultType.invalidEmail:
+          AuthDialogs.showErrorDialog(context, 'The email address is not valid. Please check its format and try again.');
+          break;
+        case AuthResultType.error: // Generic error, show the message from AuthService
+        default:
+          AuthDialogs.showErrorDialog(context, result.message);
       }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Signup failed';
-      if (e.code.contains('email-already-in-use')) {
-        message = 'This email is already in use. Try signing in.';
-      } else if (e.code.contains('invalid-email')) {
-        message = 'The email you entered is invalid.';
-      } else if (e.code.contains('weak-password')) {
-        message = 'Password is too weak. Use at least 6 characters.';
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.error),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Signup failed: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context).size;
-    final isWide = media.width > 500;
-
     return Scaffold(
       backgroundColor: const Color(0xFF1E2038),
       appBar: AppBar(
@@ -161,11 +104,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.go('/welcome'),
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.white,
-            size: 20,
-          ),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
         ),
       ),
       body: SafeArea(
@@ -182,24 +121,17 @@ class _SignupPageState extends ConsumerState<SignupPage>
                     color: AppColors.accent,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.menu_book_rounded,
-                      color: Color(0xFF1E2038), size: 60),
+                  child: const Icon(Icons.menu_book_rounded, color: Color(0xFF1E2038), size: 60),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Join BookSwap',
-                  style: AppStyles.headline1.copyWith(
-                    fontSize: isWide ? 32 : 28,
-                    color: Colors.white,
-                  ),
+                  style: AppStyles.headline1.copyWith(fontSize: 28, color: Colors.white),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Create an account to start swapping books',
-                  style: TextStyle(
-                    color: Colors.grey[300],
-                    fontSize: isWide ? 16 : 14,
-                  ),
+                  'Create your account to start swapping books',
+                  style: TextStyle(color: Colors.grey[300], fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -208,28 +140,45 @@ class _SignupPageState extends ConsumerState<SignupPage>
                   child: Column(
                     children: [
                       TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
+                        controller: _nameController,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: 'Email',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.5)),
+                          hintText: 'Full Name',
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          prefixIcon: const Icon(Icons.email_outlined,
-                              color: Colors.white),
+                          fillColor: Colors.white.withValues(alpha: 0.1),
+                          prefixIcon: const Icon(Icons.person_outline, color: Colors.white),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
                         validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Please enter your email';
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value!)) {
-                            return 'Please enter a valid email';
+                          if (value == null || value.isEmpty) return 'Please enter your name';
+                          if (value.length < 2) return 'Name must be at least 2 characters';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Email',
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.1),
+                          prefixIcon: const Icon(Icons.email_outlined, color: Colors.white),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Please enter your email';
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                            return 'Enter a valid email address';
                           }
                           return null;
                         },
@@ -241,24 +190,18 @@ class _SignupPageState extends ConsumerState<SignupPage>
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Password',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.5)),
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          prefixIcon: const Icon(Icons.lock_outline,
-                              color: Colors.white),
+                          fillColor: Colors.white.withValues(alpha: 0.1),
+                          prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
                         validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Please enter a password';
-                          }
-                          if (value!.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter a password';
+                          if (value.length < 6) return 'Password must be at least 6 characters';
                           return null;
                         },
                       ),
@@ -269,24 +212,18 @@ class _SignupPageState extends ConsumerState<SignupPage>
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Confirm Password',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.5)),
+                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
-                          prefixIcon: const Icon(Icons.lock_outline,
-                              color: Colors.white),
+                          fillColor: Colors.white.withValues(alpha: 0.1),
+                          prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
                         validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Please confirm your password';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Passwords do not match';
-                          }
+                          if (value == null || value.isEmpty) return 'Please confirm your password';
+                          if (value != _passwordController.text) return 'Passwords do not match';
                           return null;
                         },
                       ),
@@ -299,16 +236,13 @@ class _SignupPageState extends ConsumerState<SignupPage>
                             onPressed: _isLoading ? null : _signUp,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _glowAnimation.value,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2)
+                                ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                                 : const Text(
-                                    'Sign Up',
+                                    'Create Account',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -322,11 +256,8 @@ class _SignupPageState extends ConsumerState<SignupPage>
                       GestureDetector(
                         onTap: () => context.go('/signin'),
                         child: const Text(
-                          "Already have an account? Sign In",
-                          style: TextStyle(
-                            color: AppColors.accent,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          "Already have an account? Sign in!",
+                          style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
                         ),
                       )
                     ],
