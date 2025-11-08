@@ -34,12 +34,19 @@ class _BottomNavBar extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF1A1B3A),
+            const Color(0xFF2D1B69),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -106,28 +113,28 @@ class _NavItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected 
-                ? AppColors.accent.withValues(alpha: 0.2)
+                ? AppColors.accent.withValues(alpha: 0.25)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? AppColors.primary : AppColors.textDark.withValues(alpha: 0.6),
-                size: 24,
+                color: isSelected ? AppColors.accent : Colors.white.withValues(alpha: 0.7),
+                size: 26,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? AppColors.primary : AppColors.textDark.withValues(alpha: 0.6),
-                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: isSelected ? AppColors.accent : Colors.white.withValues(alpha: 0.7),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,

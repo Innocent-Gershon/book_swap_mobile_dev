@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Light theme colors
-  static const Color primary = Color(0xFF1976D2);
+  // Light theme colors - Matching Welcome Screen
+  static const Color primary = Color(0xFF1976D2); // Blue
   static const Color primaryDark = Color(0xFF1565C0);
   static const Color primaryLight = Color(0xFF42A5F5);
-  static const Color accent = Color(0xFFFFA726);
+  static const Color accent = Color(0xFFFFA726); // Orange
   static const Color accentDark = Color(0xFFF57C00);
   static const Color accentLight = Color(0xFFFFB74D);
 

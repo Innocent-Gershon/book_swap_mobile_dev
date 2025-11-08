@@ -5,8 +5,8 @@ import '../providers/book_provider.dart';
 import '../providers/swap_provider.dart';
 import '../theme/app_colors.dart';
 import '../../data/models/book_model.dart';
-// import '../../data/models/swap_model.dart';
 import '../../services/auth_service.dart';
+import '../widgets/book/enhanced_book_card.dart';
 
 class MyListingsPage extends ConsumerWidget {
   const MyListingsPage({super.key});
@@ -30,12 +30,12 @@ class MyListingsPage extends ConsumerWidget {
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.person_outline, size: 48, color: AppColors.primary),
+                child: const Icon(Icons.person_outline, size: 48, color: Color(0xFF1A1B3A)),
               ),
               const SizedBox(height: 16),
-              Text('Please Sign In', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+              const Text('Please Sign In', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A))),
               const SizedBox(height: 8),
-              Text('Sign in to view your book collection', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
+              Text('Sign in to view your book collection', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
             ],
           ),
         ),
@@ -45,94 +45,91 @@ class MyListingsPage extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          title: const Text('My Books'),
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-          elevation: 0,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider.withValues(alpha: 0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1A1B3A),
+                const Color(0xFF2D1B69),
+                const Color(0xFF1E213D),
+                Colors.white,
+              ],
+              stops: const [0.0, 0.3, 0.5, 0.8],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.accent, AppColors.accentLight],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.library_books, color: Color(0xFF1A1B3A), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('My Collection', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text('Manage your books', style: TextStyle(fontSize: 13, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: TabBar(
-                indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryLight],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textSecondary,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  letterSpacing: 0.5,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                tabs: [
-                  Tab(
-                    height: 56,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.library_books_rounded, size: 20),
-                        const SizedBox(width: 8),
-                        Text('My Books'),
-                      ],
-                    ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Tab(
-                    height: 56,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.local_offer_rounded, size: 20),
-                        const SizedBox(width: 8),
-                        Text('My Offers'),
-                      ],
+                  child: TabBar(
+                    indicator: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(colors: [AppColors.primary, AppColors.primaryLight]),
                     ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                    tabs: const [
+                      Tab(height: 44, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.library_books_rounded, size: 16), SizedBox(width: 6), Flexible(child: Text('My Books', overflow: TextOverflow.ellipsis))])),
+                      Tab(height: 44, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.local_offer_rounded, size: 16), SizedBox(width: 6), Flexible(child: Text('My Offers', overflow: TextOverflow.ellipsis))])),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _MyBooksTab(userId: currentUser.uid),
+                      _MyOffersTab(userId: currentUser.uid),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        body: TabBarView(
-          children: [
-            _MyBooksTab(userId: currentUser.uid),
-            _MyOffersTab(userId: currentUser.uid),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: FloatingActionButton.extended(
           onPressed: () => context.push('/post-book'),
           backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.primary,
-          child: const Icon(Icons.add, size: 28),
+          foregroundColor: const Color(0xFF1A1B3A),
+          icon: const Icon(Icons.add),
+          label: const Text('Add Book', style: TextStyle(fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -141,7 +138,6 @@ class MyListingsPage extends ConsumerWidget {
 
 class _MyBooksTab extends ConsumerWidget {
   final String userId;
-  
   const _MyBooksTab({required this.userId});
 
   @override
@@ -158,17 +154,15 @@ class _MyBooksTab extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)],
-                    ),
+                    gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)]),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.library_books, size: 48, color: AppColors.primary),
+                  child: const Icon(Icons.library_books, size: 48, color: Color(0xFF1A1B3A)),
                 ),
                 const SizedBox(height: 16),
-                Text('No Books Yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                const Text('No Books Yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A))),
                 const SizedBox(height: 8),
-                Text('Add your first book to get started!', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
+                Text('Add your first book to get started!', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () => context.push('/post-book'),
@@ -176,8 +170,9 @@ class _MyBooksTab extends ConsumerWidget {
                   label: const Text('Add Book'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textLight,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
@@ -188,169 +183,139 @@ class _MyBooksTab extends ConsumerWidget {
         final availableBooks = books.where((b) => b.status == SwapStatus.available).toList();
         final pendingBooks = books.where((b) => b.status == SwapStatus.pending).toList();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Stats Card
-              Container(
-                padding: const EdgeInsets.all(20),
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+          itemCount: books.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primaryDark,
+                      const Color(0xFF312E81),
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 30,
+                      offset: const Offset(0, 12),
+                      spreadRadius: -5,
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         children: [
-                          Text(books.length.toString(), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textLight)),
-                          Text('Total', style: TextStyle(fontSize: 16, color: AppColors.textLight.withValues(alpha: 0.8))),
+                          Text(books.length.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+                          Text('Total', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)), maxLines: 1),
                         ],
                       ),
                     ),
+                    Container(width: 1, height: 40, color: Colors.white.withValues(alpha: 0.3)),
                     Expanded(
                       child: Column(
                         children: [
-                          Text(availableBooks.length.toString(), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textLight)),
-                          Text('Available', style: TextStyle(fontSize: 16, color: AppColors.textLight.withValues(alpha: 0.8))),
+                          Text(availableBooks.length.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+                          Text('Available', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)), maxLines: 1),
                         ],
                       ),
                     ),
+                    Container(width: 1, height: 40, color: Colors.white.withValues(alpha: 0.3)),
                     Expanded(
                       child: Column(
                         children: [
-                          Text(pendingBooks.length.toString(), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textLight)),
-                          Text('Pending', style: TextStyle(fontSize: 16, color: AppColors.textLight.withValues(alpha: 0.8))),
+                          Text(pendingBooks.length.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+                          Text('Pending', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)), maxLines: 1),
                         ],
                       ),
                     ),
                   ],
                 ),
+              );
+            }
+            
+            final book = books[index - 1];
+            return EnhancedBookCard(
+              book: book,
+              actionButton: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (book.status == SwapStatus.available) ...[ 
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/edit-book/${book.id}'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Edit', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _showDeleteConfirmation(context, ref, book),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.delete, size: 16),
+                      label: const Text('Delete', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                  ] else ...[  
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('PENDING', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warning)),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 24),
-              
-              Text('Your Books', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-              const SizedBox(height: 16),
-              
-              ...books.map((book) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.menu_book, color: AppColors.primary, size: 28),
-                  ),
-                  title: Text(book.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(book.author, style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(book.status).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          book.status.name.toUpperCase(),
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _getStatusColor(book.status)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: book.status == SwapStatus.pending 
-                      ? _PendingSwapActions(book: book)
-                      : PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert, color: AppColors.textDark),
-                          onSelected: (value) => _handleMenuAction(context, ref, value, book),
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit, color: AppColors.primary, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('Edit', style: TextStyle(fontSize: 16)),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete, color: Colors.red, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('Delete', style: TextStyle(fontSize: 16, color: Colors.red)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              )),
-            ],
-          ),
+            );
+          },
         );
       },
-      loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3)),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error loading books', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Text('Error loading books', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text('$error', style: TextStyle(fontSize: 16, color: Colors.red)),
+            Text('$error', style: const TextStyle(fontSize: 16, color: Colors.red)),
           ],
         ),
       ),
     );
   }
 
-  void _handleMenuAction(BuildContext context, WidgetRef ref, String action, BookModel book) {
-    switch (action) {
-      case 'edit':
-        context.push('/edit-book/${book.id}');
-        break;
-      case 'delete':
-        _showDeleteConfirmation(context, ref, book);
-        break;
-    }
-  }
-
   void _showDeleteConfirmation(BuildContext context, WidgetRef ref, BookModel book) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Book', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-        content: Text('Are you sure you want to delete "${book.title}"? This action cannot be undone.', style: TextStyle(fontSize: 16)),
+        title: const Text('Delete Book', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+        content: Text('Are you sure you want to delete "${book.title}"?', style: const TextStyle(fontSize: 16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel', style: TextStyle(fontSize: 16)),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -359,105 +324,28 @@ class _MyBooksTab extends ConsumerWidget {
                 await ref.read(bookServiceProvider).deleteBook(book.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Book deleted successfully', style: TextStyle(fontSize: 16)),
-                      backgroundColor: AppColors.success,
-                    ),
+                    const SnackBar(content: Text('Book deleted'), backgroundColor: AppColors.success),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to delete book: $e', style: TextStyle(fontSize: 16)),
-                      backgroundColor: Colors.red,
-                    ),
+                    SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Delete', style: TextStyle(fontSize: 16)),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
-
-  Color _getStatusColor(SwapStatus status) {
-    switch (status) {
-      case SwapStatus.available:
-        return AppColors.success;
-      case SwapStatus.pending:
-        return AppColors.warning;
-      case SwapStatus.swapped:
-        return AppColors.primary;
-    }
-  }
-}
-
-class _PendingSwapActions extends ConsumerWidget {
-  final BookModel book;
-  
-  const _PendingSwapActions({required this.book});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          onPressed: () => _acceptSwap(context, ref),
-          icon: Icon(Icons.check, color: AppColors.success),
-          tooltip: 'Accept',
-        ),
-        IconButton(
-          onPressed: () => _rejectSwap(context, ref),
-          icon: Icon(Icons.close, color: Colors.red),
-          tooltip: 'Reject',
-        ),
-      ],
-    );
-  }
-
-  void _acceptSwap(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref.read(swapServiceProvider).updateSwapStatusByBookId(book.id, 'accepted');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Swap request accepted')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to accept swap: $e')),
-        );
-      }
-    }
-  }
-
-  void _rejectSwap(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref.read(swapServiceProvider).updateSwapStatusByBookId(book.id, 'rejected');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Swap request rejected')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to reject swap: $e')),
-        );
-      }
-    }
-  }
 }
 
 class _MyOffersTab extends ConsumerWidget {
   final String userId;
-  
   const _MyOffersTab({required this.userId});
 
   @override
@@ -474,113 +362,131 @@ class _MyOffersTab extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)],
-                    ),
+                    gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)]),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.swap_horiz, size: 48, color: AppColors.primary),
+                  child: const Icon(Icons.swap_horiz, size: 48, color: Color(0xFF1A1B3A)),
                 ),
                 const SizedBox(height: 16),
-                Text('No Offers Yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                const Text('No Offers Yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A))),
                 const SizedBox(height: 8),
-                Text('Your swap requests will appear here', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
+                Text('Your swap requests will appear here', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
               ],
             ),
           );
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
           itemCount: swaps.length,
           itemBuilder: (context, index) {
             final swap = swaps[index];
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, AppColors.accent.withValues(alpha: 0.02)],
+                ),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.swap_horiz, color: AppColors.primary, size: 28),
-                ),
-                title: Text('Book Request', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
                   children: [
-                    const SizedBox(height: 4),
-                    Text('Book ID: ${swap.bookId}', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
-                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
-                        color: _getSwapStatusColor(swap.status).withValues(alpha: 0.2),
+                        gradient: LinearGradient(colors: [AppColors.accent, AppColors.accentLight]),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        swap.status.label.toUpperCase(),
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _getSwapStatusColor(swap.status)),
+                      child: const Icon(Icons.swap_horiz, color: Color(0xFF1A1B3A), size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Swap Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 4),
+                          Text('Book ID: ${swap.bookId}', style: TextStyle(fontSize: 13, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: _getSwapStatusGradient(swap.status)),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              swap.status.label.toUpperCase(),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-                trailing: swap.status.label == 'accepted' 
-                    ? ElevatedButton(
+                    if (swap.status.label == 'accepted')
+                      ElevatedButton(
                         onPressed: () => context.push('/chat/${swap.ownerUserId}'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.textLight,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text('Chat'),
-                      )
-                    : null,
+                        child: const Text('Chat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
+                  ],
+                ),
               ),
             );
           },
         );
       },
-      loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3)),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error loading offers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Text('Error loading offers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text('$error', style: TextStyle(fontSize: 16, color: Colors.red)),
+            Text('$error', style: const TextStyle(fontSize: 16, color: Colors.red)),
           ],
         ),
       ),
     );
   }
 
-  Color _getSwapStatusColor(dynamic status) {
+  List<Color> _getSwapStatusGradient(dynamic status) {
     final statusLabel = status is String ? status : status.label;
     switch (statusLabel) {
       case 'pending':
-        return AppColors.warning;
+        return [AppColors.warning, AppColors.warning.withValues(alpha: 0.8)];
       case 'accepted':
-        return AppColors.success;
+        return [AppColors.success, AppColors.success.withValues(alpha: 0.8)];
       case 'rejected':
-        return Colors.red;
+        return [Colors.red, Colors.red.withValues(alpha: 0.8)];
       default:
-        return AppColors.primary;
+        return [AppColors.primary, AppColors.primaryLight];
     }
   }
 }

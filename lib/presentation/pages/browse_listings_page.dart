@@ -6,138 +6,239 @@ import '../providers/book_provider.dart';
 import '../theme/app_colors.dart';
 import '../../data/models/book_model.dart';
 import '../../services/auth_service.dart';
+import '../widgets/book/enhanced_book_card.dart';
 
 final swapServiceProvider = Provider((ref) => SwapService());
 
-class BrowseListingsPage extends ConsumerWidget {
+class BrowseListingsPage extends ConsumerStatefulWidget {
   const BrowseListingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BrowseListingsPage> createState() => _BrowseListingsPageState();
+}
+
+class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<BookModel> _filterBooks(List<BookModel> books) {
+    if (_searchQuery.isEmpty) return books;
+    
+    final query = _searchQuery.toLowerCase();
+    return books.where((book) {
+      final title = book.title.toLowerCase();
+      final author = book.author.toLowerCase();
+      final condition = book.condition.toString().split('.').last.toLowerCase();
+      
+      return title.contains(query) || author.contains(query) || condition.contains(query);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final booksAsync = ref.watch(booksStreamProvider);
     final currentUser = AuthService.currentUser;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Browse Books'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {},
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1A1B3A),
+              const Color(0xFF2D1B69),
+              const Color(0xFF1E213D),
+              Colors.white,
+            ],
+            stops: const [0.0, 0.3, 0.5, 0.8],
           ),
-        ],
-      ),
-      body: booksAsync.when(
-        data: (books) {
-          if (books.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.auto_stories, size: 48, color: AppColors.primary),
-                  ),
-                  const SizedBox(height: 16),
-                  Text('No Books Available', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                  const SizedBox(height: 8),
-                  Text('Be the first to share a book!', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: books.length,
-            itemBuilder: (context, index) {
-              final book = books[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(book.title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                      const SizedBox(height: 8),
-                      Text('by ${book.author}', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(book.condition.name.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
-                          ),
-                          const Spacer(),
-                          if (currentUser != null && book.ownerId != currentUser.uid)
-                            ElevatedButton(
-                              onPressed: () => _requestSwap(context, ref, book),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.textLight,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              ),
-                              child: const Text('Request Swap', style: TextStyle(fontSize: 16)),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-        loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, stack) => Center(
+        ),
+        child: SafeArea(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error loading books', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Text('$error', style: TextStyle(fontSize: 16, color: Colors.red)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: _isSearching ? _buildSearchBar() : _buildHeader(),
+              ),
+              Expanded(child: _buildBooksList(booksAsync, currentUser)),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/post-book'),
         backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.primary,
-        child: const Icon(Icons.add, size: 28),
+        foregroundColor: const Color(0xFF1A1B3A),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Book', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
 
-  void _requestSwap(BuildContext context, WidgetRef ref, BookModel book) async {
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.accent, AppColors.accentLight],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.auto_stories, color: Color(0xFF1A1B3A), size: 22),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Discover Books', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text('Find your next great read', style: TextStyle(fontSize: 13, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.white, size: 22),
+          onPressed: () => setState(() => _isSearching = true),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: _searchController,
+        autofocus: true,
+        onChanged: (value) => setState(() => _searchQuery = value),
+        decoration: InputDecoration(
+          hintText: 'Search by title, author, or condition...',
+          hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
+          prefixIcon: Icon(Icons.search, color: AppColors.primary, size: 20),
+          suffixIcon: IconButton(
+            icon: Icon(Icons.close, color: Colors.grey[600], size: 20),
+            onPressed: () {
+              setState(() {
+                _isSearching = false;
+                _searchQuery = '';
+                _searchController.clear();
+              });
+            },
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        style: const TextStyle(fontSize: 14),
+      ),
+    );
+  }
+
+  Widget _buildBooksList(AsyncValue<List<BookModel>> booksAsync, currentUser) {
+    return booksAsync.when(
+      data: (books) {
+        final filteredBooks = _filterBooks(books);
+        
+        if (books.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)]),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_stories, size: 48, color: Color(0xFF1A1B3A)),
+                ),
+                const SizedBox(height: 16),
+                const Text('No Books Available', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A))),
+                const SizedBox(height: 8),
+                Text('Be the first to share a book!', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+              ],
+            ),
+          );
+        }
+
+        if (filteredBooks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                ),
+                const SizedBox(height: 16),
+                Text('No Books Found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                const SizedBox(height: 8),
+                Text('Try searching with different keywords', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+          itemCount: filteredBooks.length,
+          itemBuilder: (context, index) {
+            final book = filteredBooks[index];
+            return EnhancedBookCard(
+              book: book,
+              showOwnerInfo: true,
+              actionButton: currentUser != null && book.ownerId != currentUser.uid
+                  ? ElevatedButton.icon(
+                      onPressed: () => _requestSwap(book),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.swap_horiz, size: 18),
+                      label: const Text('Request Swap', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    )
+                  : null,
+            );
+          },
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3)),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text('Error loading books', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text('$error', style: const TextStyle(fontSize: 16, color: Colors.red)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _requestSwap(BookModel book) async {
     final currentUser = AuthService.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,7 +279,6 @@ class SwapService {
   }) async {
     final batch = _firestore.batch();
     
-    // Create swap document
     final swapRef = _firestore.collection('swaps').doc();
     batch.set(swapRef, {
       'id': swapRef.id,
@@ -190,18 +290,15 @@ class SwapService {
       'updatedAt': FieldValue.serverTimestamp(),
     });
     
-    // Update book status to pending
     batch.update(
       _firestore.collection('books').doc(bookId),
       {
         'status': 'pending',
         'swapRequesterId': requesterId,
         'updatedAt': FieldValue.serverTimestamp(),
-      }
+      },
     );
     
     await batch.commit();
   }
 }
-
-

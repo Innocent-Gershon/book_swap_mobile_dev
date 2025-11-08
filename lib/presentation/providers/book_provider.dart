@@ -23,34 +23,43 @@ class BookService {
     return _firestore
         .collection('books')
         .where('status', isEqualTo: 'available')
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BookModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          final books = snapshot.docs
+              .map((doc) => BookModel.fromFirestore(doc))
+              .toList();
+          books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return books;
+        });
   }
 
   Stream<List<BookModel>> getBrowseBooksStream(String? currentUserId) {
     return _firestore
         .collection('books')
         .where('status', isEqualTo: 'available')
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BookModel.fromFirestore(doc))
-            .where((book) => currentUserId == null || book.ownerId != currentUserId)
-            .toList());
+        .map((snapshot) {
+          final books = snapshot.docs
+              .map((doc) => BookModel.fromFirestore(doc))
+              .where((book) => currentUserId == null || book.ownerId != currentUserId)
+              .toList();
+          books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return books;
+        });
   }
 
   Stream<List<BookModel>> getUserBooksStream(String userId) {
     return _firestore
         .collection('books')
         .where('ownerId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BookModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          final books = snapshot.docs
+              .map((doc) => BookModel.fromFirestore(doc))
+              .toList();
+          books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return books;
+        });
   }
 
   Future<void> addBook(BookModel book) async {

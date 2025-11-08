@@ -44,11 +44,25 @@ class ChatService {
         .collection('chats')
         .doc(chatId)
         .collection('messages')
-        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => MessageModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          final messages = snapshot.docs
+              .map((doc) {
+                try {
+                  return MessageModel.fromFirestore(doc);
+                } catch (e) {
+                  print('Error parsing message: $e');
+                  return null;
+                }
+              })
+              .whereType<MessageModel>()
+              .toList();
+          
+          // Sort in memory
+          messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          
+          return messages;
+        });
   }
 
   Future<String> createOrGetChat(String userId1, String userId2) async {

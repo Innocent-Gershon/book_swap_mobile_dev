@@ -24,14 +24,32 @@ class MessageModel with _$MessageModel {
   factory MessageModel.fromJson(Map<String, dynamic> json) => _$MessageModelFromJson(json);
 
   factory MessageModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) {
+      throw Exception('Document data is null');
+    }
+    
+    DateTime timestamp;
+    try {
+      final ts = data['timestamp'];
+      if (ts == null) {
+        timestamp = DateTime.now();
+      } else if (ts is Timestamp) {
+        timestamp = ts.toDate();
+      } else {
+        timestamp = DateTime.now();
+      }
+    } catch (e) {
+      timestamp = DateTime.now();
+    }
+    
     return MessageModel(
       id: doc.id,
       chatId: data['chatId'] ?? '',
       senderId: data['senderId'] ?? '',
       recipientId: data['recipientId'] ?? '',
       content: data['content'] ?? '',
-      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      timestamp: timestamp,
       isRead: data['isRead'] ?? false,
     );
   }
