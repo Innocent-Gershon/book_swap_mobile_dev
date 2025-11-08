@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/chat_provider.dart';
-import '../theme/vintage_theme.dart';
-import '../widgets/vintage_widgets.dart';
+import '../theme/app_colors.dart';
 import '../../services/auth_service.dart';
 
 class ChatsListPage extends ConsumerWidget {
@@ -17,11 +15,42 @@ class ChatsListPage extends ConsumerWidget {
     
     if (currentUser == null) {
       return Scaffold(
-        backgroundColor: VintageTheme.parchment,
-        body: VintageEmptyState(
-          icon: Icons.person_outline_rounded,
-          title: 'Please Sign In',
-          subtitle: 'Sign in to view your conversations',
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person_outline_rounded,
+                  size: 48,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Please Sign In',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sign in to view your conversations',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -29,9 +58,12 @@ class ChatsListPage extends ConsumerWidget {
     final chatsAsync = ref.watch(userChatsStreamProvider(currentUser.uid));
 
     return Scaffold(
-      backgroundColor: VintageTheme.parchment,
-      appBar: VintageAppBar(
-        title: 'Conversations',
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        title: const Text('Conversations'),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.search_rounded),
@@ -42,10 +74,42 @@ class ChatsListPage extends ConsumerWidget {
       body: chatsAsync.when(
         data: (chats) {
           if (chats.isEmpty) {
-            return VintageEmptyState(
-              icon: Icons.chat_bubble_outline_rounded,
-              title: 'No Conversations Yet',
-              subtitle: 'Start a conversation by requesting a book swap!',
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Conversations Yet',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Start a conversation by requesting a book swap!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             );
           }
 
@@ -53,7 +117,7 @@ class ChatsListPage extends ConsumerWidget {
             onRefresh: () async {
               ref.invalidate(userChatsStreamProvider(currentUser.uid));
             },
-            color: VintageTheme.antiqueBrown,
+            color: AppColors.primary,
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: chats.length,
@@ -70,8 +134,7 @@ class ChatsListPage extends ConsumerWidget {
         },
         loading: () => Center(
           child: CircularProgressIndicator(
-            color: VintageTheme.antiqueBrown,
-            strokeWidth: 3,
+            color: AppColors.primary,
           ),
         ),
         error: (error, stack) => Center(
@@ -80,24 +143,24 @@ class ChatsListPage extends ConsumerWidget {
             children: [
               Icon(
                 Icons.error_outline_rounded,
-                size: 64,
-                color: VintageTheme.burgundy.withOpacity(0.6),
+                size: 48,
+                color: AppColors.error,
               ),
               const SizedBox(height: 16),
               Text(
                 'Failed to load conversations',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
+                style: TextStyle(
+                  fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: VintageTheme.darkBrown,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Please check your connection and try again',
-                style: GoogleFonts.crimsonText(
+                style: TextStyle(
                   fontSize: 16,
-                  color: VintageTheme.sepia,
+                  color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -112,34 +175,35 @@ class ChatsListPage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppColors.surface,
         title: Text(
           'Search Conversations',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: VintageTheme.darkBrown,
-          ),
+          style: TextStyle(color: AppColors.textPrimary),
         ),
         content: TextField(
-          style: GoogleFonts.crimsonText(fontSize: 16),
+          style: TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
-            hintText: 'Search messages...',
-            hintStyle: GoogleFonts.crimsonText(fontSize: 16, color: VintageTheme.sepia),
+            hintText: 'Search by user or message...',
+            hintStyle: TextStyle(color: AppColors.textHint),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: VintageTheme.antiqueBrown),
+              borderSide: BorderSide(color: AppColors.divider),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(fontSize: 16)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Search', style: TextStyle(fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+            child: const Text('Search'),
           ),
         ],
       ),
@@ -165,9 +229,10 @@ class _ChatCard extends StatelessWidget {
     final lastMessage = chat['lastMessage'] ?? '';
     final lastMessageAt = chat['lastMessageAt'];
     
-    return Container(
+    return Card(
+      color: AppColors.surface,
+      elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: VintageTheme.vintageCardDecoration,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -175,45 +240,39 @@ class _ChatCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Avatar
               Container(
-                width: 50,
-                height: 50,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [VintageTheme.antiqueBrown, VintageTheme.darkBrown],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppColors.accent,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.person_rounded,
-                  color: VintageTheme.cream,
+                  color: Colors.white,
                   size: 24,
                 ),
               ),
               const SizedBox(width: 16),
               
-              // Chat Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      otherUserId.isNotEmpty ? 'User $otherUserId' : 'Unknown User',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 18,
+                      'Book Exchange Chat',
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: VintageTheme.darkBrown,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       lastMessage.isNotEmpty ? lastMessage : 'No messages yet',
-                      style: GoogleFonts.crimsonText(
-                        fontSize: 16,
-                        color: VintageTheme.sepia,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -222,26 +281,21 @@ class _ChatCard extends StatelessWidget {
                 ),
               ),
               
-              // Time and Indicator
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   if (lastMessageAt != null)
                     Text(
                       _formatTime(lastMessageAt),
-                      style: GoogleFonts.crimsonText(
-                        fontSize: 14,
-                        color: VintageTheme.sepia.withOpacity(0.7),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   const SizedBox(height: 4),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: VintageTheme.goldAccent,
-                      shape: BoxShape.circle,
-                    ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textHint,
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/book_provider.dart';
 import '../theme/app_colors.dart';
 import '../../data/models/book_model.dart';
@@ -14,6 +15,7 @@ class BrowseListingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final booksAsync = ref.watch(booksStreamProvider);
+    final currentUser = AuthService.currentUser;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -93,15 +95,16 @@ class BrowseListingsPage extends ConsumerWidget {
                             child: Text(book.condition.name.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
                           ),
                           const Spacer(),
-                          ElevatedButton(
-                            onPressed: () => _requestSwap(context, ref, book),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: AppColors.textLight,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          if (currentUser != null && book.ownerId != currentUser.uid)
+                            ElevatedButton(
+                              onPressed: () => _requestSwap(context, ref, book),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.textLight,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              child: const Text('Request Swap', style: TextStyle(fontSize: 16)),
                             ),
-                            child: const Text('Request Swap', style: TextStyle(fontSize: 16)),
-                          ),
                         ],
                       ),
                     ],
@@ -166,13 +169,38 @@ class BrowseListingsPage extends ConsumerWidget {
 }
 
 class SwapService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
   Future<void> createSwapRequest({
     required String bookId,
     required String requesterId,
     required String ownerId,
   }) async {
-    // Implementation for creating swap request
-    await Future.delayed(const Duration(milliseconds: 500));
+    final batch = _firestore.batch();
+    
+    // Create swap document
+    final swapRef = _firestore.collection('swaps').doc();
+    batch.set(swapRef, {
+      'id': swapRef.id,
+      'bookId': bookId,
+      'requesterUserId': requesterId,
+      'ownerUserId': ownerId,
+      'status': 'pending',
+      'initiatedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    
+    // Update book status to pending
+    batch.update(
+      _firestore.collection('books').doc(bookId),
+      {
+        'status': 'pending',
+        'swapRequesterId': requesterId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }
+    );
+    
+    await batch.commit();
   }
 }
 

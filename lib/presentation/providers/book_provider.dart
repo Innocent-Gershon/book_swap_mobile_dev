@@ -8,6 +8,10 @@ final booksStreamProvider = StreamProvider<List<BookModel>>((ref) {
   return ref.watch(bookServiceProvider).getBooksStream();
 });
 
+final browseBooksStreamProvider = StreamProvider.family<List<BookModel>, String?>((ref, currentUserId) {
+  return ref.watch(bookServiceProvider).getBrowseBooksStream(currentUserId);
+});
+
 final userBooksStreamProvider = StreamProvider.family<List<BookModel>, String>((ref, userId) {
   return ref.watch(bookServiceProvider).getUserBooksStream(userId);
 });
@@ -23,6 +27,18 @@ class BookService {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => BookModel.fromFirestore(doc))
+            .toList());
+  }
+
+  Stream<List<BookModel>> getBrowseBooksStream(String? currentUserId) {
+    return _firestore
+        .collection('books')
+        .where('status', isEqualTo: 'available')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BookModel.fromFirestore(doc))
+            .where((book) => currentUserId == null || book.ownerId != currentUserId)
             .toList());
   }
 

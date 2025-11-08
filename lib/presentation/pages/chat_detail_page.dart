@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/chat_provider.dart';
-import '../theme/vintage_theme.dart';
+import '../theme/app_colors.dart';
 import '../../data/models/message_model.dart';
 import '../../services/auth_service.dart';
 
@@ -33,7 +32,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     
     if (currentUser == null) {
       return Scaffold(
-        backgroundColor: VintageTheme.parchment,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(title: const Text('Chat')),
         body: const Center(child: Text('Please sign in to view chat')),
       );
@@ -42,22 +41,15 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     final messagesAsync = ref.watch(messagesStreamProvider(widget.chatId));
 
     return Scaffold(
-      backgroundColor: VintageTheme.parchment,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: VintageTheme.antiqueBrown,
-        foregroundColor: VintageTheme.cream,
-        title: Text(
-          'Book Exchange Chat',
-          style: GoogleFonts.playfairDisplay(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        title: const Text('Book Exchange Chat'),
         elevation: 0,
       ),
       body: Column(
         children: [
-          // Messages List
           Expanded(
             child: messagesAsync.when(
               data: (messages) {
@@ -69,34 +61,30 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: VintageTheme.antiqueBrown.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: VintageTheme.antiqueBrown.withOpacity(0.3),
-                              width: 2,
-                            ),
                           ),
                           child: Icon(
                             Icons.chat_bubble_outline_rounded,
                             size: 48,
-                            color: VintageTheme.antiqueBrown.withOpacity(0.6),
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Start the Conversation',
-                          style: GoogleFonts.playfairDisplay(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w600,
-                            color: VintageTheme.darkBrown,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Send your first message to begin discussing the book exchange',
-                          style: GoogleFonts.crimsonText(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: VintageTheme.sepia,
+                            color: AppColors.textSecondary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -122,8 +110,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
               },
               loading: () => Center(
                 child: CircularProgressIndicator(
-                  color: VintageTheme.antiqueBrown,
-                  strokeWidth: 3,
+                  color: AppColors.primary,
                 ),
               ),
               error: (error, stack) => Center(
@@ -133,23 +120,23 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                     Icon(
                       Icons.error_outline_rounded,
                       size: 48,
-                      color: VintageTheme.burgundy.withOpacity(0.6),
+                      color: AppColors.error,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Failed to load messages',
-                      style: GoogleFonts.playfairDisplay(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: VintageTheme.darkBrown,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Please check your connection and try again',
-                      style: GoogleFonts.crimsonText(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: VintageTheme.sepia,
+                        color: AppColors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -159,15 +146,12 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
             ),
           ),
           
-          // Message Input
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: VintageTheme.oldPaper,
+              color: AppColors.surface,
               border: Border(
-                top: BorderSide(
-                  color: VintageTheme.antiqueBrown.withOpacity(0.3),
-                ),
+                top: BorderSide(color: AppColors.divider),
               ),
             ),
             child: Row(
@@ -175,23 +159,21 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: VintageTheme.cream,
+                      color: AppColors.background,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: VintageTheme.antiqueBrown.withOpacity(0.3),
-                      ),
+                      border: Border.all(color: AppColors.divider),
                     ),
                     child: TextField(
                       controller: _messageController,
-                      style: GoogleFonts.crimsonText(
-                        fontSize: 18,
-                        color: VintageTheme.darkBrown,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Type your message...',
-                        hintStyle: GoogleFonts.crimsonText(
+                        hintStyle: TextStyle(
                           fontSize: 16,
-                          color: VintageTheme.sepia.withOpacity(0.7),
+                          color: AppColors.textHint,
                         ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
@@ -207,25 +189,14 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                 const SizedBox(width: 12),
                 Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [VintageTheme.antiqueBrown, VintageTheme.darkBrown],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: VintageTheme.darkBrown.withOpacity(0.3),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: IconButton(
                     onPressed: _sendMessage,
                     icon: const Icon(
                       Icons.send_rounded,
-                      color: VintageTheme.cream,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -253,7 +224,6 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       
       _messageController.clear();
       
-      // Scroll to bottom
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           0,
@@ -266,7 +236,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send message: $e'),
-            backgroundColor: VintageTheme.burgundy,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -295,14 +265,12 @@ class _MessageBubble extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [VintageTheme.sepia, VintageTheme.darkBrown],
-                ),
+                color: AppColors.accent,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.person_rounded,
-                color: VintageTheme.cream,
+                color: Colors.white,
                 size: 16,
               ),
             ),
@@ -312,7 +280,7 @@ class _MessageBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isMe ? VintageTheme.antiqueBrown : VintageTheme.oldPaper,
+                color: isMe ? AppColors.primary : AppColors.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -320,36 +288,27 @@ class _MessageBubble extends StatelessWidget {
                   bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
                 border: Border.all(
-                  color: isMe 
-                      ? VintageTheme.darkBrown.withOpacity(0.3)
-                      : VintageTheme.antiqueBrown.withOpacity(0.3),
+                  color: isMe ? AppColors.primary : AppColors.divider,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: VintageTheme.darkBrown.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     message.content,
-                    style: GoogleFonts.crimsonText(
-                      fontSize: 18,
-                      color: isMe ? VintageTheme.cream : VintageTheme.darkBrown,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isMe ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatTimestamp(message.timestamp),
-                    style: GoogleFonts.crimsonText(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 12,
                       color: isMe 
-                          ? VintageTheme.cream.withOpacity(0.8)
-                          : VintageTheme.sepia.withOpacity(0.7),
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -362,14 +321,12 @@ class _MessageBubble extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [VintageTheme.goldAccent, VintageTheme.antiqueBrown],
-                ),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.person_rounded,
-                color: VintageTheme.cream,
+                color: Colors.white,
                 size: 16,
               ),
             ),

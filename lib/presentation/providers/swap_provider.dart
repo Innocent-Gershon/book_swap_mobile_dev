@@ -18,8 +18,8 @@ class SwapService {
   Stream<List<SwapModel>> getUserSwapsStream(String userId) {
     return _firestore
         .collection('swaps')
-        .where('requesterId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
+        .where('requesterUserId', isEqualTo: userId)
+        .orderBy('initiatedAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => SwapModel.fromFirestore(doc))
@@ -29,8 +29,8 @@ class SwapService {
   Stream<List<SwapModel>> getSwapRequestsStream(String userId) {
     return _firestore
         .collection('swaps')
-        .where('ownerId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
+        .where('ownerUserId', isEqualTo: userId)
+        .orderBy('initiatedAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => SwapModel.fromFirestore(doc))
@@ -47,12 +47,11 @@ class SwapService {
     // Create swap document
     final swapRef = _firestore.collection('swaps').doc();
     batch.set(swapRef, {
-      'id': swapRef.id,
       'bookId': bookId,
-      'requesterId': requesterId,
-      'ownerId': ownerId,
+      'requesterUserId': requesterId,
+      'ownerUserId': ownerId,
       'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
+      'initiatedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
     
@@ -61,7 +60,7 @@ class SwapService {
       _firestore.collection('books').doc(bookId),
       {
         'status': 'pending',
-        'updatedAt': FieldValue.serverTimestamp(),
+        'swapRequesterId': requesterId,
       }
     );
     
@@ -70,6 +69,14 @@ class SwapService {
 
   Future<void> updateSwapStatus(String swapId, String status) async {
     final batch = _firestore.batch();
+    
+    // Get the swap document first to get book ID
+    final swapDoc = await _firestore.collection('swaps').doc(swapId).get();
+    final swapData = swapDoc.data();
+    
+    if (swapData == null) return;
+    
+    final bookId = swapData['bookId'] as String;
     
     // Update swap status
     batch.update(
@@ -80,36 +87,39 @@ class SwapService {
       }
     );
     
-    // If accepted, update book status to swapped
+    // Update book status based on swap decision
     if (status == 'accepted') {
-      final swapDoc = await _firestore.collection('swaps').doc(swapId).get();
-      final bookId = swapDoc.data()?['bookId'];
-      
-      if (bookId != null) {
-        batch.update(
-          _firestore.collection('books').doc(bookId),
-          {
-            'status': 'swapped',
-            'updatedAt': FieldValue.serverTimestamp(),
-          }
-        );
-      }
+      batch.update(
+        _firestore.collection('books').doc(bookId),
+        {
+          'status': 'swapped',
+        }
+      );
     } else if (status == 'rejected') {
-      // If rejected, make book available again
-      final swapDoc = await _firestore.collection('swaps').doc(swapId).get();
-      final bookId = swapDoc.data()?['bookId'];
-      
-      if (bookId != null) {
-        batch.update(
-          _firestore.collection('books').doc(bookId),
-          {
-            'status': 'available',
-            'updatedAt': FieldValue.serverTimestamp(),
-          }
-        );
-      }
+      batch.update(
+        _firestore.collection('books').doc(bookId),
+        {
+          'status': 'available',
+          'swapRequesterId': FieldValue.delete(),
+        }
+      );
     }
     
     await batch.commit();
+  }
+
+  Future<void> updateSwapStatusByBookId(String bookId, String status) async {
+    // Find swap by book ID
+    final swapQuery = await _firestore
+        .collection('swaps')
+        .where('bookId', isEqualTo: bookId)
+        .where('status', isEqualTo: 'pending')
+        .limit(1)
+        .get();
+    
+    if (swapQuery.docs.isEmpty) return;
+    
+    final swapDoc = swapQuery.docs.first;
+    await updateSwapStatus(swapDoc.id, status);
   }
 }
