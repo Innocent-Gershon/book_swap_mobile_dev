@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
+// import 'dart:ui';
 import 'package:book_swap/presentation/pages/widgets/theme/app_colors.dart';
 
 class WelcomePage extends ConsumerStatefulWidget {
@@ -102,13 +102,13 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                                     gradient: LinearGradient(
                                       colors: [
                                         AppColors.accent,
-                                        AppColors.accent.withOpacity(0.8),
+                                        AppColors.accent.withValues(alpha: 0.8),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(24),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.accent.withOpacity(0.4),
+                                        color: AppColors.accent.withValues(alpha: 0.4),
                                         blurRadius: 20,
                                         spreadRadius: 2,
                                       ),
@@ -125,7 +125,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                                   shaderCallback: (bounds) => LinearGradient(
                                     colors: [
                                       Colors.white,
-                                      Colors.white.withOpacity(0.8)
+                                      Colors.white.withValues(alpha: 0.8)
                                     ],
                                   ).createShader(bounds),
                                   child: Text(
@@ -137,7 +137,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                                       color: Colors.white,
                                       shadows: [
                                         Shadow(
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: Colors.black.withValues(alpha: 0.3),
                                           offset: const Offset(0, 4),
                                           blurRadius: 8,
                                         ),

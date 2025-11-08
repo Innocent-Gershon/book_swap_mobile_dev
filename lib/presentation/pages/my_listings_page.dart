@@ -1,489 +1,304 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:book_swap/core/providers/app_providers.dart';
-import 'package:book_swap/data/models/book_model.dart';
-import 'package:book_swap/data/services/firebase_service.dart';
-import 'package:book_swap/presentation/pages/post_book_page.dart';
-import 'package:book_swap/presentation/pages/widgets/theme/app_colors.dart';
-import 'package:book_swap/presentation/pages/widgets/theme/app_styles.dart';
+import '../providers/book_provider.dart';
+import '../theme/app_colors.dart';
+import '../../data/models/book_model.dart';
+import '../../services/auth_service.dart';
 
 class MyListingsPage extends ConsumerWidget {
   const MyListingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUser = FirebaseService.currentUser;
+    final currentUser = AuthService.currentUser;
     
     if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('Please log in to view your listings')),
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.person_outline, size: 48, color: AppColors.primary),
+              ),
+              const SizedBox(height: 16),
+              Text('Please Sign In', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+              const SizedBox(height: 8),
+              Text('Sign in to view your book collection', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
+            ],
+          ),
+        ),
       );
     }
 
     final userBooksAsync = ref.watch(userBooksStreamProvider(currentUser.uid));
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: const Text('My Listings'),
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textLight,
-            elevation: 0,
-          ),
-          body: userBooksAsync.when(
-            data: (books) {
-              if (books.isEmpty) {
-                return const _EmptyState();
-              }
-
-              final availableBooks = books.where((b) => b.status == SwapStatus.available).toList();
-              final pendingBooks = books.where((b) => b.status == SwapStatus.pending).toList();
-              final swappedBooks = books.where((b) => b.status == SwapStatus.swapped).toList();
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(userBooksStreamProvider(currentUser.uid));
-                },
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      padding: EdgeInsets.all(constraints.maxWidth > 600 ? 24 : 16),
-                      child: Column(
-                        children: [
-                          if (pendingBooks.isNotEmpty) ...[
-                            _SectionHeader(
-                              title: 'Pending Swaps',
-                              count: pendingBooks.length,
-                              icon: Icons.hourglass_empty,
-                              color: AppColors.warning,
-                            ),
-                            ...pendingBooks.map((book) => _MyBookCard(
-                              book: book,
-                              onEdit: () => _editBook(context, book),
-                              onDelete: () => _deleteBook(context, ref, book),
-                            )),
-                            const SizedBox(height: 24),
-                          ],
-                          
-                          if (availableBooks.isNotEmpty) ...[
-                            _SectionHeader(
-                              title: 'Available Books',
-                              count: availableBooks.length,
-                              icon: Icons.book,
-                              color: AppColors.success,
-                            ),
-                            ...availableBooks.map((book) => _MyBookCard(
-                              book: book,
-                              onEdit: () => _editBook(context, book),
-                              onDelete: () => _deleteBook(context, ref, book),
-                            )),
-                            const SizedBox(height: 24),
-                          ],
-
-                          if (swappedBooks.isNotEmpty) ...[
-                            _SectionHeader(
-                              title: 'Completed Swaps',
-                              count: swappedBooks.length,
-                              icon: Icons.done_all,
-                              color: Colors.grey,
-                            ),
-                            ...swappedBooks.map((book) => _MyBookCard(
-                              book: book,
-                              onEdit: null, // Can't edit swapped books
-                              onDelete: () => _deleteBook(context, ref, book),
-                            )),
-                          ],
-                          const SizedBox(height: 100), // Bottom padding
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
-            error: (error, stack) => Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.refresh,
-                      size: 64,
-                      color: AppColors.primary.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Unable to load your books', style: AppStyles.headline3),
-                    const SizedBox(height: 8),
-                    Text('Please check your connection and try again', 
-                         style: AppStyles.bodyText2,
-                         textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(userBooksStreamProvider(currentUser.uid)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.textLight,
-                      ),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.push('/post-book'),
-            backgroundColor: AppColors.accent,
-            foregroundColor: AppColors.textDark,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Book'),
-          ),
-        );
-  }
-
-  void _editBook(BuildContext context, BookModel book) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => PostBookPage(bookToEdit: book),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('My Books'),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        elevation: 0,
       ),
-    );
-  }
-
-  Future<void> _deleteBook(BuildContext context, WidgetRef ref, BookModel book) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Book'),
-        content: Text('Are you sure you want to delete "${book.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await FirebaseService.deleteBook(book.id);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Book deleted successfully'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete book: $e'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
-    }
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final int count;
-  final IconData icon;
-  final Color color;
-
-  const _SectionHeader({
-    required this.title,
-    required this.count,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: AppStyles.bodyText1.copyWith(
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              count.toString(),
-              style: AppStyles.bodyTextSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MyBookCard extends StatelessWidget {
-  final BookModel book;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-
-  const _MyBookCard({
-    required this.book,
-    this.onEdit,
-    this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Book Cover
-            Container(
-              width: 60,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                color: AppColors.border,
-                image: book.imageUrl != null
-                    ? DecorationImage(
-                        image: NetworkImage(book.imageUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: book.imageUrl == null
-                  ? const Icon(Icons.book, color: AppColors.primary)
-                  : null,
-            ),
-            const SizedBox(width: 16),
-            
-            // Book Info
-            Expanded(
+      body: userBooksAsync.when(
+        data: (books) {
+          if (books.isEmpty) {
+            return Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    book.title,
-                    style: AppStyles.cardTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'by ${book.author}',
-                    style: AppStyles.cardSubtitle,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _ConditionChip(condition: book.condition),
-                      const SizedBox(width: 8),
-                      _StatusChip(status: book.status),
-                    ],
-                  ),
-                  if (book.status == SwapStatus.pending && book.swapRequesterId != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Swap requested',
-                      style: AppStyles.bodyTextSmall.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w500,
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)],
                       ),
+                      shape: BoxShape.circle,
                     ),
-                  ],
+                    child: Icon(Icons.library_books, size: 48, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('No Books Yet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  const SizedBox(height: 8),
+                  Text('Add your first book to get started!', style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => context.push('/post-book'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Book'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textLight,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
                 ],
               ),
-            ),
-            
-            // Actions
-            Column(
+            );
+          }
+
+          final availableBooks = books.where((b) => b.status == SwapStatus.available).toList();
+          final pendingBooks = books.where((b) => b.status == SwapStatus.pending).toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (onEdit != null)
-                  IconButton(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                    color: AppColors.primary,
-                    tooltip: 'Edit',
+                // Stats Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                if (onDelete != null)
-                  IconButton(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline),
-                    color: AppColors.error,
-                    tooltip: 'Delete',
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(books.length.toString(), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textLight)),
+                            Text('Total', style: TextStyle(fontSize: 16, color: AppColors.textLight.withValues(alpha: 0.8))),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(availableBooks.length.toString(), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textLight)),
+                            Text('Available', style: TextStyle(fontSize: 16, color: AppColors.textLight.withValues(alpha: 0.8))),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(pendingBooks.length.toString(), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textLight)),
+                            Text('Pending', style: TextStyle(fontSize: 16, color: AppColors.textLight.withValues(alpha: 0.8))),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(height: 24),
+                
+                Text('Your Books', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                const SizedBox(height: 16),
+                
+                ...books.map((book) => Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.menu_book, color: AppColors.primary, size: 28),
+                    ),
+                    title: Text(book.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(book.author, style: TextStyle(fontSize: 16, color: AppColors.textDark.withValues(alpha: 0.7))),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(book.status).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            book.status.name.toUpperCase(),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _getStatusColor(book.status)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: AppColors.textDark),
+                      onSelected: (value) => _handleMenuAction(context, ref, value, book),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, color: AppColors.primary, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Edit', style: TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(fontSize: 16, color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
               ],
             ),
-          ],
+          );
+        },
+        loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error loading books', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Text('$error', style: TextStyle(fontSize: 16, color: Colors.red)),
+            ],
+          ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/post-book'),
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.primary,
+        child: const Icon(Icons.add, size: 28),
       ),
     );
   }
-}
 
-class _ConditionChip extends StatelessWidget {
-  final BookCondition condition;
-
-  const _ConditionChip({required this.condition});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    String text;
-
-    switch (condition) {
-      case BookCondition.newBook:
-        color = AppColors.success;
-        text = 'New';
+  void _handleMenuAction(BuildContext context, WidgetRef ref, String action, BookModel book) {
+    switch (action) {
+      case 'edit':
+        context.push('/edit-book/${book.id}');
         break;
-      case BookCondition.likeNew:
-        color = Colors.blue;
-        text = 'Like New';
-        break;
-      case BookCondition.good:
-        color = AppColors.warning;
-        text = 'Good';
-        break;
-      case BookCondition.used:
-        color = Colors.grey;
-        text = 'Used';
+      case 'delete':
+        _showDeleteConfirmation(context, ref, book);
         break;
     }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        text,
-        style: AppStyles.bodyTextSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
   }
-}
 
-class _StatusChip extends StatelessWidget {
-  final SwapStatus status;
-
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    String text;
-
-    switch (status) {
-      case SwapStatus.available:
-        color = AppColors.success;
-        text = 'Available';
-        break;
-      case SwapStatus.pending:
-        color = AppColors.warning;
-        text = 'Pending';
-        break;
-      case SwapStatus.swapped:
-        color = Colors.grey;
-        text = 'Swapped';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: AppStyles.bodyTextSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.library_books_outlined,
-            size: 80,
-            color: AppColors.textDark.withValues(alpha: 0.3),
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, BookModel book) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Book', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+        content: Text('Are you sure you want to delete "${book.title}"? This action cannot be undone.', style: TextStyle(fontSize: 16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel', style: TextStyle(fontSize: 16)),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No books posted yet',
-            style: AppStyles.headline3.copyWith(
-              color: AppColors.textDark.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start by posting your first book!',
-            style: AppStyles.bodyText1.copyWith(
-              color: AppColors.textDark.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => context.push('/post-book'),
-            icon: const Icon(Icons.add),
-            label: const Text('Post Your First Book'),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                await ref.read(bookServiceProvider).deleteBook(book.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Book deleted successfully', style: TextStyle(fontSize: 16)),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete book: $e', style: TextStyle(fontSize: 16)),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Delete', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(SwapStatus status) {
+    switch (status) {
+      case SwapStatus.available:
+        return AppColors.success;
+      case SwapStatus.pending:
+        return AppColors.warning;
+      case SwapStatus.swapped:
+        return AppColors.primary;
+    }
   }
 }

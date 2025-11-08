@@ -1,6 +1,7 @@
 import 'package:book_swap/presentation/pages/browse_listings_page.dart';
 import 'package:book_swap/presentation/pages/chat_detail_page.dart';
 import 'package:book_swap/presentation/pages/chats_list_page.dart';
+import 'package:book_swap/presentation/pages/edit_book_page.dart';
 import 'package:book_swap/presentation/pages/main_wrapper.dart';
 import 'package:book_swap/presentation/pages/my_listings_page.dart';
 import 'package:book_swap/presentation/pages/post_book_page.dart';
@@ -93,8 +94,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 name: AppRoutes.chatDetail,
                 builder: (context, state) {
                   final chatId = state.pathParameters['chatId']!;
-                  final otherUserId = state.pathParameters['otherUserId']!;
-                  return ChatDetailPage(chatId: chatId, otherUserId: otherUserId);
+                  return ChatDetailPage(chatId: chatId);
                 },
               ),
             ],
@@ -114,6 +114,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const PostBookPage(),
       ),
       GoRoute(
+        path: '/edit-book/:bookId',
+        builder: (context, state) {
+          final bookId = state.pathParameters['bookId']!;
+          return EditBookPage(bookId: bookId);
+        },
+      ),
+      GoRoute(
         path: '/chat/:chatId',
         builder: (context, state) {
           final chatId = state.pathParameters['chatId']!;
@@ -129,7 +136,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     },
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Error')),
-      body: Center(child: Text('Error: ${state.error}')),
+      body: const Center(child: Text('Page not found')),
     ),
   );
 });

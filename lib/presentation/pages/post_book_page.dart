@@ -73,7 +73,7 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
       await storageRef.putFile(_selectedImage!);
       return await storageRef.getDownloadURL();
     } catch (e) {
-      print('Error uploading image: $e');
+      debugPrint('Error uploading image: $e');
       return null;
     }
   }

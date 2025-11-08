@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:book_swap/presentation/pages/widgets/theme/app_colors.dart';
-import 'package:book_swap/presentation/pages/widgets/theme/app_styles.dart';
+import '../pages/widgets/theme/app_colors.dart';
 
 class MainWrapper extends StatelessWidget {
   final Widget child;
@@ -51,8 +50,8 @@ class _BottomNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: Icons.explore_outlined,
-                activeIcon: Icons.explore,
+                icon: Icons.auto_stories_outlined,
+                activeIcon: Icons.auto_stories,
                 label: 'Browse',
                 isSelected: selectedIndex == 0,
                 onTap: () => context.go('/browse'),
@@ -109,7 +108,7 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
-              ? AppColors.primary.withValues(alpha: 0.1)
+              ? AppColors.accent.withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -124,7 +123,8 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: AppStyles.bodyTextSmall.copyWith(
+              style: TextStyle(
+                fontSize: 12,
                 color: isSelected ? AppColors.primary : AppColors.textDark.withValues(alpha: 0.6),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),

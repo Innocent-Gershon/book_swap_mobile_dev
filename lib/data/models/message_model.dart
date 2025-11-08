@@ -23,6 +23,21 @@ class MessageModel with _$MessageModel {
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => _$MessageModelFromJson(json);
 
+  factory MessageModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return MessageModel(
+      id: doc.id,
+      chatId: data['chatId'] ?? '',
+      senderId: data['senderId'] ?? '',
+      recipientId: data['recipientId'] ?? '',
+      content: data['content'] ?? '',
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isRead: data['isRead'] ?? false,
+    );
+  }
+
+  String get text => content;
+
   factory MessageModel.fromDocumentSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return MessageModel.fromJson(data..['id'] = doc.id);

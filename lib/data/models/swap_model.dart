@@ -25,6 +25,24 @@ class SwapModel with _$SwapModel {
 
   factory SwapModel.fromJson(Map<String, dynamic> json) => _$SwapModelFromJson(json);
 
+  factory SwapModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return SwapModel(
+      id: doc.id,
+      bookId: data['bookId'] ?? '',
+      requesterUserId: data['requesterUserId'] ?? '',
+      ownerUserId: data['ownerUserId'] ?? '',
+      status: SwapStatus.values.firstWhere(
+        (e) => e.label == data['status'],
+        orElse: () => SwapStatus.pending,
+      ),
+      initiatedAt: (data['initiatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+      message: data['message'],
+      counterBookId: data['counterBookId'],
+    );
+  }
+
   factory SwapModel.fromDocumentSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return SwapModel.fromJson(data..['id'] = doc.id);
