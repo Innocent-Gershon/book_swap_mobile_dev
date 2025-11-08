@@ -19,11 +19,24 @@ class ChatService {
     return _firestore
         .collection('chats')
         .where('participants', arrayContains: userId)
-        .orderBy('lastMessageAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .toList());
+        .map((snapshot) {
+          final chats = snapshot.docs
+              .map((doc) => {'id': doc.id, ...doc.data()})
+              .toList();
+          
+          // Sort in memory instead of using orderBy to avoid index requirement
+          chats.sort((a, b) {
+            final aTime = a['lastMessageAt'];
+            final bTime = b['lastMessageAt'];
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return bTime.compareTo(aTime);
+          });
+          
+          return chats;
+        });
   }
 
   Stream<List<MessageModel>> getMessagesStream(String chatId) {
@@ -69,34 +82,24 @@ class ChatService {
     required String senderId,
     required String text,
   }) async {
-    final batch = _firestore.batch();
-    
     // Add message
-    final messageRef = _firestore
+    await _firestore
         .collection('chats')
         .doc(chatId)
         .collection('messages')
-        .doc();
-    
-    batch.set(messageRef, {
-      'id': messageRef.id,
+        .add({
       'chatId': chatId,
       'senderId': senderId,
-      'recipientId': '', // Will be populated with actual recipient
+      'recipientId': '',
       'content': text,
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
     });
     
-    // Update chat last message
-    batch.update(
-      _firestore.collection('chats').doc(chatId),
-      {
-        'lastMessage': text,
-        'lastMessageAt': FieldValue.serverTimestamp(),
-      }
-    );
-    
-    await batch.commit();
+    // Update chat last message (use set with merge to create if not exists)
+    await _firestore.collection('chats').doc(chatId).set({
+      'lastMessage': text,
+      'lastMessageAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 }

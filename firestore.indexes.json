@@ -33,7 +33,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "participant",
+          "fieldPath": "participants",
           "arrayConfig": "CONTAINS"
         },
         {
