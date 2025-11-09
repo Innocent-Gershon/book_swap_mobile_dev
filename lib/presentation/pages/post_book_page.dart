@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:book_swap/core/providers/app_providers.dart';
 import 'package:book_swap/data/models/book_model.dart';
 import 'package:book_swap/data/services/firebase_service.dart';
@@ -26,6 +28,7 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
   
   BookCondition _selectedCondition = BookCondition.good;
   File? _selectedImage;
+  Uint8List? _webImage;
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
@@ -55,25 +58,46 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
     );
 
     if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _webImage = bytes;
+          _selectedImage = File(image.path); // Keep for reference
+        });
+      } else {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
     }
   }
 
   Future<String?> _uploadImage() async {
-    if (_selectedImage == null) return null;
+    if (_selectedImage == null && _webImage == null) return null;
 
     try {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('book_covers')
-          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-      await storageRef.putFile(_selectedImage!);
-      return await storageRef.getDownloadURL();
+      
+      Uint8List imageBytes;
+      if (kIsWeb && _webImage != null) {
+        imageBytes = _webImage!;
+      } else {
+        imageBytes = await _selectedImage!.readAsBytes();
+      }
+      
+      // Convert to base64
+      final base64Image = base64Encode(imageBytes);
+      final dataUrl = 'data:image/jpeg;base64,$base64Image';
+      
+      return dataUrl;
     } catch (e) {
-      debugPrint('Error uploading image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to process image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return null;
     }
   }
@@ -88,8 +112,20 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
 
     try {
       String? imageUrl;
-      if (_selectedImage != null) {
+      if (_selectedImage != null || _webImage != null) {
+        // Show uploading message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Uploading image...'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
         imageUrl = await _uploadImage();
+        if (imageUrl == null) {
+          throw Exception('Image upload failed');
+        }
       } else if (widget.bookToEdit != null) {
         imageUrl = widget.bookToEdit!.imageUrl;
       }
@@ -106,11 +142,13 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
         status: widget.bookToEdit?.status ?? SwapStatus.available,
       );
 
+      
       if (widget.bookToEdit != null) {
         await FirebaseService.updateBook(book);
       } else {
         await FirebaseService.createBook(book);
       }
+      
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -168,6 +206,7 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
             // Image Section
             _ImageSection(
               selectedImage: _selectedImage,
+              webImage: _webImage,
               existingImageUrl: widget.bookToEdit?.imageUrl,
               onImageTap: _pickImage,
             ),
@@ -265,11 +304,13 @@ class _PostBookPageState extends ConsumerState<PostBookPage> {
 
 class _ImageSection extends StatelessWidget {
   final File? selectedImage;
+  final Uint8List? webImage;
   final String? existingImageUrl;
   final VoidCallback onImageTap;
 
   const _ImageSection({
     this.selectedImage,
+    this.webImage,
     this.existingImageUrl,
     required this.onImageTap,
   });
@@ -291,13 +332,18 @@ class _ImageSection extends StatelessWidget {
             ),
             color: AppColors.card,
           ),
-          child: selectedImage != null
+          child: (selectedImage != null || webImage != null)
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: Image.file(
-                    selectedImage!,
-                    fit: BoxFit.cover,
-                  ),
+                  child: kIsWeb && webImage != null
+                      ? Image.memory(
+                          webImage!,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.file(
+                          selectedImage!,
+                          fit: BoxFit.cover,
+                        ),
                 )
               : existingImageUrl != null
                   ? ClipRRect(

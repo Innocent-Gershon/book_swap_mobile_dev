@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../data/models/book_model.dart';
 import '../../theme/app_colors.dart';
@@ -15,6 +16,10 @@ class EnhancedBookCard extends StatelessWidget {
     this.actionButton,
     this.showOwnerInfo = false,
   });
+
+  bool _isBase64Image(String? imageUrl) {
+    return imageUrl != null && imageUrl.startsWith('data:image');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,11 +71,17 @@ class EnhancedBookCard extends StatelessWidget {
                   child: book.imageUrl != null && book.imageUrl!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            book.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                          ),
+                          child: _isBase64Image(book.imageUrl)
+                              ? Image.memory(
+                                  base64Decode(book.imageUrl!.split(',')[1]),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                                )
+                              : Image.network(
+                                  book.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                                ),
                         )
                       : _buildPlaceholder(),
                 ),

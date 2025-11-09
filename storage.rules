@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow public read for book covers, authenticated write
+    match /book_covers/{fileName} {
+      allow read: if true;  // Public read access
+      allow write: if request.auth != null;
+    }
+    
+    // Allow public read for profile photos, authenticated write
+    match /profile_photos/{userId}/{fileName} {
+      allow read: if true;  // Public read access
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

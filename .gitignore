@@ -43,3 +43,45 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ============================================
+# SENSITIVE FILES - DO NOT COMMIT
+# ============================================
+
+# Firebase Configuration Files
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+
+# Firebase Options (auto-generated)
+lib/firebase_options.dart
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# API Keys and Secrets
+**/secrets.json
+**/api_keys.dart
+**/config.dart
+
+# Private Keys
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+
+# Local Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
