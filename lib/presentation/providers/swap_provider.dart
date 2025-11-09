@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/swap_model.dart';
+import 'chat_provider.dart';
+import '../../services/notification_service.dart';
 
 final swapServiceProvider = Provider((ref) => SwapService());
 
@@ -19,22 +21,62 @@ class SwapService {
     return _firestore
         .collection('swaps')
         .where('requesterUserId', isEqualTo: userId)
-        .orderBy('initiatedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SwapModel.fromFirestore(doc))
-            .toList());
+        .handleError((error) {
+          print('Error loading user swaps: $error');
+          return const Stream.empty();
+        })
+        .map((snapshot) {
+          try {
+            final swaps = snapshot.docs
+                .map((doc) {
+                  try {
+                    return SwapModel.fromFirestore(doc);
+                  } catch (e) {
+                    print('Error parsing swap ${doc.id}: $e');
+                    return null;
+                  }
+                })
+                .whereType<SwapModel>()
+                .toList();
+            swaps.sort((a, b) => b.initiatedAt.compareTo(a.initiatedAt));
+            return swaps;
+          } catch (e) {
+            print('Error processing user swaps: $e');
+            return <SwapModel>[];
+          }
+        });
   }
 
   Stream<List<SwapModel>> getSwapRequestsStream(String userId) {
     return _firestore
         .collection('swaps')
         .where('ownerUserId', isEqualTo: userId)
-        .orderBy('initiatedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SwapModel.fromFirestore(doc))
-            .toList());
+        .handleError((error) {
+          print('Error loading swap requests: $error');
+          return const Stream.empty();
+        })
+        .map((snapshot) {
+          try {
+            final swaps = snapshot.docs
+                .map((doc) {
+                  try {
+                    return SwapModel.fromFirestore(doc);
+                  } catch (e) {
+                    print('Error parsing swap ${doc.id}: $e');
+                    return null;
+                  }
+                })
+                .whereType<SwapModel>()
+                .toList();
+            swaps.sort((a, b) => b.initiatedAt.compareTo(a.initiatedAt));
+            return swaps;
+          } catch (e) {
+            print('Error processing swap requests: $e');
+            return <SwapModel>[];
+          }
+        });
   }
 
   Future<void> createSwapRequest({
@@ -43,6 +85,10 @@ class SwapService {
     required String ownerId,
   }) async {
     final batch = _firestore.batch();
+    
+    // Get book details for notification
+    final bookDoc = await _firestore.collection('books').doc(bookId).get();
+    final bookTitle = bookDoc.data()?['title'] ?? 'Unknown Book';
     
     // Create swap document
     final swapRef = _firestore.collection('swaps').doc();
@@ -65,18 +111,30 @@ class SwapService {
     );
     
     await batch.commit();
+    
+    // Create notification for book owner
+    await NotificationService().createNotification(
+      userId: ownerId,
+      type: 'swap_request',
+      title: 'New Swap Request',
+      message: 'Someone wants to swap your book "$bookTitle"',
+      swapId: swapRef.id,
+      bookTitle: bookTitle,
+    );
   }
 
   Future<void> updateSwapStatus(String swapId, String status) async {
     final batch = _firestore.batch();
     
-    // Get the swap document first to get book ID
+    // Get the swap document first to get book ID and user IDs
     final swapDoc = await _firestore.collection('swaps').doc(swapId).get();
     final swapData = swapDoc.data();
     
     if (swapData == null) return;
     
     final bookId = swapData['bookId'] as String;
+    final ownerUserId = swapData['ownerUserId'] as String;
+    final requesterUserId = swapData['requesterUserId'] as String;
     
     // Update swap status
     batch.update(
@@ -106,6 +164,26 @@ class SwapService {
     }
     
     await batch.commit();
+    
+    // Create chat and notification if swap is accepted
+    if (status == 'accepted') {
+      final chatService = ChatService();
+      await chatService.createOrGetChat(ownerUserId, requesterUserId);
+      
+      // Get book details for notification
+      final bookDoc = await _firestore.collection('books').doc(bookId).get();
+      final bookTitle = bookDoc.data()?['title'] ?? 'Unknown Book';
+      
+      // Create notification for requester
+      await NotificationService().createNotification(
+        userId: requesterUserId,
+        type: 'swap_accepted',
+        title: 'Swap Request Accepted!',
+        message: 'Your request for "$bookTitle" has been accepted',
+        swapId: swapId,
+        bookTitle: bookTitle,
+      );
+    }
   }
 
   Future<void> updateSwapStatusByBookId(String bookId, String status) async {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/book_provider.dart';
 import '../providers/swap_provider.dart';
+import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
 import '../../data/models/book_model.dart';
 import '../../services/auth_service.dart';
@@ -43,7 +44,7 @@ class MyListingsPage extends ConsumerWidget {
     }
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         body: Container(
           decoration: BoxDecoration(
@@ -108,6 +109,7 @@ class MyListingsPage extends ConsumerWidget {
                     unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
                     tabs: const [
                       Tab(height: 44, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.library_books_rounded, size: 16), SizedBox(width: 6), Flexible(child: Text('My Books', overflow: TextOverflow.ellipsis))])),
+                      Tab(height: 44, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.inbox_rounded, size: 16), SizedBox(width: 6), Flexible(child: Text('Requests', overflow: TextOverflow.ellipsis))])),
                       Tab(height: 44, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.local_offer_rounded, size: 16), SizedBox(width: 6), Flexible(child: Text('My Offers', overflow: TextOverflow.ellipsis))])),
                     ],
                   ),
@@ -116,6 +118,7 @@ class MyListingsPage extends ConsumerWidget {
                   child: TabBarView(
                     children: [
                       _MyBooksTab(userId: currentUser.uid),
+                      _IncomingRequestsTab(userId: currentUser.uid),
                       _MyOffersTab(userId: currentUser.uid),
                     ],
                   ),
@@ -444,7 +447,7 @@ class _MyOffersTab extends ConsumerWidget {
                     ),
                     if (swap.status.label == 'accepted')
                       ElevatedButton(
-                        onPressed: () => context.push('/chat/${swap.ownerUserId}'),
+                        onPressed: () => _openChat(context, ref, swap.ownerUserId),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -474,6 +477,312 @@ class _MyOffersTab extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openChat(BuildContext context, WidgetRef ref, String otherUserId) async {
+    try {
+      final currentUser = AuthService.currentUser;
+      if (currentUser == null) return;
+      
+      final chatId = await ref.read(chatServiceProvider).createOrGetChat(currentUser.uid, otherUserId);
+      if (context.mounted) {
+        context.push('/chat/$chatId');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to open chat: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  List<Color> _getSwapStatusGradient(dynamic status) {
+    final statusLabel = status is String ? status : status.label;
+    switch (statusLabel) {
+      case 'pending':
+        return [AppColors.warning, AppColors.warning.withValues(alpha: 0.8)];
+      case 'accepted':
+        return [AppColors.success, AppColors.success.withValues(alpha: 0.8)];
+      case 'rejected':
+        return [Colors.red, Colors.red.withValues(alpha: 0.8)];
+      default:
+        return [AppColors.primary, AppColors.primaryLight];
+    }
+  }
+}
+
+class _IncomingRequestsTab extends ConsumerWidget {
+  final String userId;
+  const _IncomingRequestsTab({required this.userId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requestsAsync = ref.watch(swapRequestsStreamProvider(userId));
+
+    return requestsAsync.when(
+      data: (requests) {
+        if (requests.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)]),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.inbox, size: 48, color: Color(0xFF1A1B3A)),
+                ),
+                const SizedBox(height: 16),
+                const Text('No Requests', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A))),
+                const SizedBox(height: 8),
+                Text('Swap requests for your books will appear here', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+          itemCount: requests.length,
+          itemBuilder: (context, index) {
+            final request = requests[index];
+            final isPending = request.status.label == 'pending';
+            
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, AppColors.primary.withValues(alpha: 0.02)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: [AppColors.primary, AppColors.primaryLight]),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.person, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Swap Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 4),
+                              Text('Book ID: ${request.bookId}', style: TextStyle(fontSize: 13, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: _getSwapStatusGradient(request.status)),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            request.status.label.toUpperCase(),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isPending) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    if (request.id != null) {
+                                      _acceptRequest(context, ref, request.id!);
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Accept',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    if (request.id != null) {
+                                      _rejectRequest(context, ref, request.id!);
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.cancel, color: Colors.white, size: 18),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Reject',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3)),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text('Error loading requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text('$error', style: const TextStyle(fontSize: 16, color: Colors.red)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _acceptRequest(BuildContext context, WidgetRef ref, String swapId) async {
+    try {
+      await ref.read(swapServiceProvider).updateSwapStatus(swapId, 'accepted');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Swap request accepted! Chat created.'), backgroundColor: AppColors.success),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectRequest(BuildContext context, WidgetRef ref, String swapId) async {
+    try {
+      await ref.read(swapServiceProvider).updateSwapStatus(swapId, 'rejected');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Swap request rejected'), backgroundColor: Colors.grey),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   List<Color> _getSwapStatusGradient(dynamic status) {

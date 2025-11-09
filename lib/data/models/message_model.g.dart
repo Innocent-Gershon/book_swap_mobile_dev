@@ -15,6 +15,7 @@ _$MessageModelImpl _$$MessageModelImplFromJson(Map<String, dynamic> json) =>
       content: json['content'] as String,
       timestamp: const TimestampConverter().fromJson(json['timestamp']),
       isRead: json['isRead'] as bool? ?? false,
+      isEdited: json['isEdited'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$MessageModelImplToJson(_$MessageModelImpl instance) =>
@@ -26,4 +27,5 @@ Map<String, dynamic> _$$MessageModelImplToJson(_$MessageModelImpl instance) =>
       'content': instance.content,
       'timestamp': const TimestampConverter().toJson(instance.timestamp),
       'isRead': instance.isRead,
+      'isEdited': instance.isEdited,
     };

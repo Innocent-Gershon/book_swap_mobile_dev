@@ -228,6 +228,7 @@ class _ChatCard extends StatelessWidget {
     final otherUserId = participants.firstWhere((id) => id != currentUserId, orElse: () => '');
     final lastMessage = chat['lastMessage'] ?? '';
     final lastMessageAt = chat['lastMessageAt'];
+    final unreadCount = chat['unreadCount_$currentUserId'] ?? 0;
     
     return Card(
       color: AppColors.surface,
@@ -293,10 +294,36 @@ class _ChatCard extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 4),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.textHint,
-                  ),
+                  if (unreadCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textHint,
+                    ),
                 ],
               ),
             ],

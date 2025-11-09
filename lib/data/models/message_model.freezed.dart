@@ -28,6 +28,7 @@ mixin _$MessageModel {
   @TimestampConverter()
   DateTime get timestamp => throw _privateConstructorUsedError;
   bool get isRead => throw _privateConstructorUsedError;
+  bool get isEdited => throw _privateConstructorUsedError;
 
   /// Serializes this MessageModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -52,7 +53,8 @@ abstract class $MessageModelCopyWith<$Res> {
       String recipientId,
       String content,
       @TimestampConverter() DateTime timestamp,
-      bool isRead});
+      bool isRead,
+      bool isEdited});
 }
 
 /// @nodoc
@@ -77,6 +79,7 @@ class _$MessageModelCopyWithImpl<$Res, $Val extends MessageModel>
     Object? content = null,
     Object? timestamp = null,
     Object? isRead = null,
+    Object? isEdited = null,
   }) {
     return _then(_value.copyWith(
       id: freezed == id
@@ -107,6 +110,10 @@ class _$MessageModelCopyWithImpl<$Res, $Val extends MessageModel>
           ? _value.isRead
           : isRead // ignore: cast_nullable_to_non_nullable
               as bool,
+      isEdited: null == isEdited
+          ? _value.isEdited
+          : isEdited // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -126,7 +133,8 @@ abstract class _$$MessageModelImplCopyWith<$Res>
       String recipientId,
       String content,
       @TimestampConverter() DateTime timestamp,
-      bool isRead});
+      bool isRead,
+      bool isEdited});
 }
 
 /// @nodoc
@@ -149,6 +157,7 @@ class __$$MessageModelImplCopyWithImpl<$Res>
     Object? content = null,
     Object? timestamp = null,
     Object? isRead = null,
+    Object? isEdited = null,
   }) {
     return _then(_$MessageModelImpl(
       id: freezed == id
@@ -179,6 +188,10 @@ class __$$MessageModelImplCopyWithImpl<$Res>
           ? _value.isRead
           : isRead // ignore: cast_nullable_to_non_nullable
               as bool,
+      isEdited: null == isEdited
+          ? _value.isEdited
+          : isEdited // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -193,7 +206,8 @@ class _$MessageModelImpl extends _MessageModel {
       required this.recipientId,
       required this.content,
       @TimestampConverter() required this.timestamp,
-      this.isRead = false})
+      this.isRead = false,
+      this.isEdited = false})
       : super._();
 
   factory _$MessageModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -216,10 +230,13 @@ class _$MessageModelImpl extends _MessageModel {
   @override
   @JsonKey()
   final bool isRead;
+  @override
+  @JsonKey()
+  final bool isEdited;
 
   @override
   String toString() {
-    return 'MessageModel(id: $id, chatId: $chatId, senderId: $senderId, recipientId: $recipientId, content: $content, timestamp: $timestamp, isRead: $isRead)';
+    return 'MessageModel(id: $id, chatId: $chatId, senderId: $senderId, recipientId: $recipientId, content: $content, timestamp: $timestamp, isRead: $isRead, isEdited: $isEdited)';
   }
 
   @override
@@ -236,13 +253,15 @@ class _$MessageModelImpl extends _MessageModel {
             (identical(other.content, content) || other.content == content) &&
             (identical(other.timestamp, timestamp) ||
                 other.timestamp == timestamp) &&
-            (identical(other.isRead, isRead) || other.isRead == isRead));
+            (identical(other.isRead, isRead) || other.isRead == isRead) &&
+            (identical(other.isEdited, isEdited) ||
+                other.isEdited == isEdited));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, chatId, senderId,
-      recipientId, content, timestamp, isRead);
+      recipientId, content, timestamp, isRead, isEdited);
 
   /// Create a copy of MessageModel
   /// with the given fields replaced by the non-null parameter values.
@@ -268,7 +287,8 @@ abstract class _MessageModel extends MessageModel {
       required final String recipientId,
       required final String content,
       @TimestampConverter() required final DateTime timestamp,
-      final bool isRead}) = _$MessageModelImpl;
+      final bool isRead,
+      final bool isEdited}) = _$MessageModelImpl;
   const _MessageModel._() : super._();
 
   factory _MessageModel.fromJson(Map<String, dynamic> json) =
@@ -289,6 +309,8 @@ abstract class _MessageModel extends MessageModel {
   DateTime get timestamp;
   @override
   bool get isRead;
+  @override
+  bool get isEdited;
 
   /// Create a copy of MessageModel
   /// with the given fields replaced by the non-null parameter values.

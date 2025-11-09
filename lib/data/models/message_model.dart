@@ -19,6 +19,7 @@ class MessageModel with _$MessageModel {
     required String content,
     @TimestampConverter() required DateTime timestamp,
     @Default(false) bool isRead,
+    @Default(false) bool isEdited,
   }) = _MessageModel;
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => _$MessageModelFromJson(json);
@@ -29,18 +30,14 @@ class MessageModel with _$MessageModel {
       throw Exception('Document data is null');
     }
     
-    DateTime timestamp;
+    DateTime timestamp = DateTime.now();
     try {
       final ts = data['timestamp'];
-      if (ts == null) {
-        timestamp = DateTime.now();
-      } else if (ts is Timestamp) {
+      if (ts != null && ts is Timestamp) {
         timestamp = ts.toDate();
-      } else {
-        timestamp = DateTime.now();
       }
     } catch (e) {
-      timestamp = DateTime.now();
+      // Use current time if timestamp parsing fails
     }
     
     return MessageModel(
@@ -51,6 +48,7 @@ class MessageModel with _$MessageModel {
       content: data['content'] ?? '',
       timestamp: timestamp,
       isRead: data['isRead'] ?? false,
+      isEdited: data['isEdited'] ?? false,
     );
   }
 

@@ -23,37 +23,60 @@ class BookService {
     return _firestore
         .collection('books')
         .snapshots()
-        .map((snapshot) {
-          final books = snapshot.docs
-              .map((doc) {
-                try {
-                  return BookModel.fromFirestore(doc);
-                } catch (e) {
-                  return null;
-                }
-              })
-              .whereType<BookModel>()
-              .toList();
-          books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return books;
-        })
         .handleError((error) {
-          return <BookModel>[];
+          print('Error loading books: $error');
+          return const Stream.empty();
+        })
+        .map((snapshot) {
+          try {
+            final books = snapshot.docs
+                .map((doc) {
+                  try {
+                    return BookModel.fromFirestore(doc);
+                  } catch (e) {
+                    print('Error parsing book ${doc.id}: $e');
+                    return null;
+                  }
+                })
+                .whereType<BookModel>()
+                .toList();
+            books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            return books;
+          } catch (e) {
+            print('Error processing books: $e');
+            return <BookModel>[];
+          }
         });
   }
 
   Stream<List<BookModel>> getBrowseBooksStream(String? currentUserId) {
     return _firestore
         .collection('books')
-        .where('status', isEqualTo: 'available')
         .snapshots()
+        .handleError((error) {
+          print('Error loading browse books: $error');
+          return const Stream.empty();
+        })
         .map((snapshot) {
-          final books = snapshot.docs
-              .map((doc) => BookModel.fromFirestore(doc))
-              .where((book) => currentUserId == null || book.ownerId != currentUserId)
-              .toList();
-          books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return books;
+          try {
+            final books = snapshot.docs
+                .map((doc) {
+                  try {
+                    return BookModel.fromFirestore(doc);
+                  } catch (e) {
+                    print('Error parsing book ${doc.id}: $e');
+                    return null;
+                  }
+                })
+                .whereType<BookModel>()
+                .where((book) => currentUserId == null || book.ownerId != currentUserId)
+                .toList();
+            books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            return books;
+          } catch (e) {
+            print('Error processing browse books: $e');
+            return <BookModel>[];
+          }
         });
   }
 
@@ -62,12 +85,29 @@ class BookService {
         .collection('books')
         .where('ownerId', isEqualTo: userId)
         .snapshots()
+        .handleError((error) {
+          print('Error loading user books: $error');
+          return const Stream.empty();
+        })
         .map((snapshot) {
-          final books = snapshot.docs
-              .map((doc) => BookModel.fromFirestore(doc))
-              .toList();
-          books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return books;
+          try {
+            final books = snapshot.docs
+                .map((doc) {
+                  try {
+                    return BookModel.fromFirestore(doc);
+                  } catch (e) {
+                    print('Error parsing book ${doc.id}: $e');
+                    return null;
+                  }
+                })
+                .whereType<BookModel>()
+                .toList();
+            books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            return books;
+          } catch (e) {
+            print('Error processing user books: $e');
+            return <BookModel>[];
+          }
         });
   }
 

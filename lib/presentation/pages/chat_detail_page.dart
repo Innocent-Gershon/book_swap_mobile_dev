@@ -18,6 +18,31 @@ class ChatDetailPage extends ConsumerStatefulWidget {
 class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  String _otherUserName = 'User';
+
+  @override
+  void initState() {
+    super.initState();
+    _markMessagesAsRead();
+    _loadOtherUserName();
+  }
+
+  void _loadOtherUserName() async {
+    final currentUser = AuthService.currentUser;
+    if (currentUser != null) {
+      final name = await ref.read(chatServiceProvider).getOtherUserName(widget.chatId, currentUser.uid);
+      if (mounted) {
+        setState(() => _otherUserName = name);
+      }
+    }
+  }
+
+  void _markMessagesAsRead() async {
+    final currentUser = AuthService.currentUser;
+    if (currentUser != null) {
+      await ref.read(chatServiceProvider).markMessagesAsRead(widget.chatId, currentUser.uid);
+    }
+  }
 
   @override
   void dispose() {
@@ -45,7 +70,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-        title: const Text('Book Exchange Chat'),
+        title: Text('Chat with $_otherUserName'),
         elevation: 0,
       ),
       body: Column(
@@ -104,42 +129,22 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                     return _MessageBubble(
                       message: message,
                       isMe: isMe,
+                      onEdit: isMe ? () => _editMessage(message) : null,
+                      onDelete: isMe ? () => _deleteMessage(message) : null,
                     );
                   },
                 );
               },
-              loading: () => Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
-              ),
+              loading: () => Center(child: CircularProgressIndicator(color: AppColors.primary)),
               error: (error, stack) => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: AppColors.error,
-                    ),
+                    Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                     const SizedBox(height: 16),
-                    Text(
-                      'Failed to load messages',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                    Text('Failed to load messages', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     const SizedBox(height: 8),
-                    Text(
-                      'Please check your connection and try again',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    Text('Please check your connection and try again', style: TextStyle(fontSize: 16, color: AppColors.textSecondary), textAlign: TextAlign.center),
                   ],
                 ),
               ),
@@ -150,9 +155,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              border: Border(
-                top: BorderSide(color: AppColors.divider),
-              ),
+              border: Border(top: BorderSide(color: AppColors.divider)),
             ),
             child: Row(
               children: [
@@ -165,21 +168,12 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                     ),
                     child: TextField(
                       controller: _messageController,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Type your message...',
-                        hintStyle: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textHint,
-                        ),
+                        hintStyle: TextStyle(fontSize: 16, color: AppColors.textHint),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
@@ -188,16 +182,10 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
                   child: IconButton(
                     onPressed: _sendMessage,
-                    icon: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
                   ),
                 ),
               ],
@@ -213,45 +201,121 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     if (text.isEmpty) return;
 
     final currentUser = AuthService.currentUser;
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in to send messages'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final messageText = text;
+    _messageController.clear();
 
     try {
       await ref.read(chatServiceProvider).sendMessage(
         chatId: widget.chatId,
         senderId: currentUser.uid,
-        text: text,
+        text: messageText,
       );
       
-      _messageController.clear();
-      
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+          }
+        });
       }
     } catch (e) {
+      _messageController.text = messageText;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send message: $e'),
-            backgroundColor: AppColors.error,
+            content: Text('Failed to send: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _sendMessage),
           ),
         );
       }
     }
+  }
+
+  void _editMessage(MessageModel message) {
+    final controller = TextEditingController(text: message.content);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Message'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Enter new message', border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final newContent = controller.text.trim();
+              if (newContent.isEmpty) return;
+              
+              try {
+                await ref.read(chatServiceProvider).editMessage(widget.chatId, message.id!, newContent);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Message edited')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to edit: $e')));
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteMessage(MessageModel message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text('Are you sure you want to delete this message?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await ref.read(chatServiceProvider).deleteMessage(widget.chatId, message.id!);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Message deleted')));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 class _MessageBubble extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const _MessageBubble({
-    required this.message,
-    required this.isMe,
-  });
+  const _MessageBubble({required this.message, required this.isMe, this.onEdit, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -259,20 +323,14 @@ class _MessageBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMe) ...[
+          if (!isMe) ...[ 
             Container(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
+              decoration: BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+              child: const Icon(Icons.person_rounded, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
           ],
@@ -287,48 +345,55 @@ class _MessageBubble extends StatelessWidget {
                   bottomLeft: Radius.circular(isMe ? 16 : 4),
                   bottomRight: Radius.circular(isMe ? 4 : 16),
                 ),
-                border: Border.all(
-                  color: isMe ? AppColors.primary : AppColors.divider,
-                ),
+                border: Border.all(color: isMe ? AppColors.primary : AppColors.divider),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: isMe ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
+                  Text(message.content, style: TextStyle(fontSize: 16, color: isMe ? Colors.white : AppColors.textPrimary)),
                   const SizedBox(height: 4),
-                  Text(
-                    _formatTimestamp(message.timestamp),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isMe 
-                          ? Colors.white.withValues(alpha: 0.8)
-                          : AppColors.textSecondary,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (message.isEdited)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text('edited', style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: isMe ? Colors.white.withValues(alpha: 0.7) : AppColors.textSecondary)),
+                        ),
+                      Text(_formatTimestamp(message.timestamp), style: TextStyle(fontSize: 12, color: isMe ? Colors.white.withValues(alpha: 0.8) : AppColors.textSecondary)),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          if (isMe) ...[
+          if (isMe && (onEdit != null || onDelete != null)) ...[
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, size: 18, color: AppColors.textSecondary),
+              onSelected: (value) {
+                if (value == 'edit' && onEdit != null) onEdit!();
+                if (value == 'delete' && onDelete != null) onDelete!();
+              },
+              itemBuilder: (context) => [
+                if (onEdit != null)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(children: [Icon(Icons.edit, size: 18, color: AppColors.primary), SizedBox(width: 8), Text('Edit')]),
+                  ),
+                if (onDelete != null)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete')]),
+                  ),
+              ],
+            ),
+          ] else if (isMe) ...[
             const SizedBox(width: 8),
             Container(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
+              decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+              child: const Icon(Icons.person_rounded, color: Colors.white, size: 16),
             ),
           ],
         ],
@@ -338,12 +403,10 @@ class _MessageBubble extends StatelessWidget {
 
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '';
-    
     try {
       final DateTime dateTime = timestamp.toDate();
       final now = DateTime.now();
       final difference = now.difference(dateTime);
-      
       if (difference.inDays > 0) {
         return DateFormat('MMM d, HH:mm').format(dateTime);
       } else {
