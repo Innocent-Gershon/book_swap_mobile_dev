@@ -213,30 +213,51 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     final messageText = text;
     _messageController.clear();
 
-    try {
-      await ref.read(chatServiceProvider).sendMessage(
-        chatId: widget.chatId,
-        senderId: currentUser.uid,
-        text: messageText,
-      );
-      
-      if (_scrollController.hasClients) {
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (_scrollController.hasClients) {
-            _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-          }
-        });
-      }
-    } catch (e) {
-      _messageController.text = messageText;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _sendMessage),
-          ),
+    int retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        await ref.read(chatServiceProvider).sendMessage(
+          chatId: widget.chatId,
+          senderId: currentUser.uid,
+          text: messageText,
         );
+        
+        if (_scrollController.hasClients) {
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+            }
+          });
+        }
+        return;
+      } catch (e) {
+        retryCount++;
+        print('Send message attempt $retryCount failed: $e');
+        
+        if (retryCount >= maxRetries) {
+          _messageController.text = messageText;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to send after $maxRetries attempts. Check your connection.'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+                action: SnackBarAction(
+                  label: 'Retry',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    _messageController.clear();
+                    _sendMessage();
+                  },
+                ),
+              ),
+            );
+          }
+        } else {
+          await Future.delayed(Duration(milliseconds: 500 * retryCount));
+        }
       }
     }
   }

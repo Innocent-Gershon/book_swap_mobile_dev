@@ -107,7 +107,7 @@ class _BottomNavBar extends StatelessWidget {
               _NavItem(
                 icon: Icons.library_books_outlined,
                 activeIcon: Icons.library_books,
-                label: 'My Books',
+                label: 'My Listings',
                 isSelected: selectedIndex == 1,
                 onTap: () => context.go('/my-listings'),
               ),

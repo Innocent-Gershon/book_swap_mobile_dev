@@ -470,8 +470,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
                     _pickImage(ImageSource.gallery);
                   },
                 ),
-                if (_imageFile != null || _imageUrl != null) ..[
+                if (_imageFile != null || _imageUrl != null)
                   const SizedBox(height: 12),
+                if (_imageFile != null || _imageUrl != null)
                   _buildImageSourceOption(
                     icon: Icons.delete,
                     label: 'Remove Photo',
@@ -484,7 +485,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
                     },
                     isDestructive: true,
                   ),
-                ],
               ],
             ),
           ),
@@ -616,7 +616,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
     try {
       String? photoUrl = await _uploadImage();
 
-      final data = {
+      final data = <String, dynamic>{
         'name': _nameController.text.trim(),
         'bio': _bioController.text.trim(),
         'location': _locationController.text.trim(),

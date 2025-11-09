@@ -282,7 +282,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primary,
+        activeTrackColor: AppColors.primary,
       ),
       onTap: () => onChanged(!value),
     );

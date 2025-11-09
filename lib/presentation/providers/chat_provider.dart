@@ -260,12 +260,16 @@ class ChatService {
       if (recipientId.isEmpty) {
         throw Exception('Recipient not found');
       }
+
+      final batch = _firestore.batch();
       
-      await _firestore
+      final messageRef = _firestore
           .collection('chats')
           .doc(chatId)
           .collection('messages')
-          .add({
+          .doc();
+      
+      batch.set(messageRef, {
         'chatId': chatId,
         'senderId': senderId,
         'recipientId': recipientId,
@@ -275,11 +279,14 @@ class ChatService {
         'isEdited': false,
       });
       
-      await _firestore.collection('chats').doc(chatId).update({
+      final chatRef = _firestore.collection('chats').doc(chatId);
+      batch.update(chatRef, {
         'lastMessage': text,
         'lastMessageAt': FieldValue.serverTimestamp(),
         'unreadCount_$recipientId': FieldValue.increment(1),
       });
+      
+      await batch.commit();
     } catch (e) {
       print('Error sending message: $e');
       rethrow;
