@@ -11,7 +11,6 @@ class NotificationService {
     required String swapId,
     String? bookTitle,
   }) async {
-    print('Creating notification for user $userId: $title');
     await _firestore.collection('notifications').add({
       'userId': userId,
       'type': type,
@@ -22,7 +21,6 @@ class NotificationService {
       'isRead': false,
       'createdAt': FieldValue.serverTimestamp(),
     });
-    print('Notification created successfully');
   }
 
   Stream<List<Map<String, dynamic>>> getNotificationsStream(String userId) {
@@ -31,7 +29,6 @@ class NotificationService {
         .where('userId', isEqualTo: userId)
         .snapshots()
         .handleError((error) {
-          print('Error loading notifications: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -49,7 +46,6 @@ class NotificationService {
             });
             return notifications;
           } catch (e) {
-            print('Error processing notifications: $e');
             return <Map<String, dynamic>>[];
           }
         });
@@ -63,7 +59,6 @@ class NotificationService {
 
   Stream<int> getUnreadCountStream(String userId) {
     return getUnreadNotificationsStream(userId).map((notifications) {
-      print('Unread notifications count for $userId: ${notifications.length}');
       return notifications.length;
     });
   }

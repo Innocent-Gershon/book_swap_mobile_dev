@@ -52,7 +52,9 @@ class BookConditionSelector extends ConsumerWidget {
             }
           },
           selectedColor: AppColors.primary,
-          labelStyle: AppStyles.conditionTag.copyWith(
+          labelStyle: AppStyles.conditionTag?.copyWith(
+            color: isSelected ? AppColors.textLight : AppColors.textDark,
+          ) ?? TextStyle(
             color: isSelected ? AppColors.textLight : AppColors.textDark,
           ),
           backgroundColor: AppColors.card,

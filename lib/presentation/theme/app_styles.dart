@@ -79,17 +79,17 @@ class AppStyles {
     color: AppColors.textHint,
   );
 
-  static get headline1 => null;
+  static TextStyle? get headline1 => null;
 
-  static get bodyText1 => null;
+  static TextStyle? get bodyText1 => null;
 
-  static get bodyText2 => null;
+  static TextStyle? get bodyText2 => null;
 
-  static get headline3 => null;
+  static TextStyle? get headline3 => null;
 
-  static get headline2 => null;
+  static TextStyle? get headline2 => null;
 
-  static get conditionTag => null;
+  static TextStyle? get conditionTag => null;
 
   static TextStyle? get buttonText => null;
 

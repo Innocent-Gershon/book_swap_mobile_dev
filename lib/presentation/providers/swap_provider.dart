@@ -23,7 +23,6 @@ class SwapService {
         .where('requesterUserId', isEqualTo: userId)
         .snapshots()
         .handleError((error) {
-          print('Error loading user swaps: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -33,7 +32,6 @@ class SwapService {
                   try {
                     return SwapModel.fromFirestore(doc);
                   } catch (e) {
-                    print('Error parsing swap ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -42,7 +40,6 @@ class SwapService {
             swaps.sort((a, b) => b.initiatedAt.compareTo(a.initiatedAt));
             return swaps;
           } catch (e) {
-            print('Error processing user swaps: $e');
             return <SwapModel>[];
           }
         });
@@ -54,7 +51,6 @@ class SwapService {
         .where('ownerUserId', isEqualTo: userId)
         .snapshots()
         .handleError((error) {
-          print('Error loading swap requests: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -64,7 +60,6 @@ class SwapService {
                   try {
                     return SwapModel.fromFirestore(doc);
                   } catch (e) {
-                    print('Error parsing swap ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -73,7 +68,6 @@ class SwapService {
             swaps.sort((a, b) => b.initiatedAt.compareTo(a.initiatedAt));
             return swaps;
           } catch (e) {
-            print('Error processing swap requests: $e');
             return <SwapModel>[];
           }
         });

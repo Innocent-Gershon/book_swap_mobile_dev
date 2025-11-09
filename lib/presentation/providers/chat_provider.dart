@@ -28,7 +28,6 @@ class ChatService {
         .where('participants', arrayContains: userId)
         .snapshots()
         .handleError((error) {
-          print('Error loading user chats: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -38,7 +37,6 @@ class ChatService {
                   try {
                     return {'id': doc.id, ...doc.data()};
                   } catch (e) {
-                    print('Error parsing chat ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -57,7 +55,6 @@ class ChatService {
             
             return chats;
           } catch (e) {
-            print('Error processing user chats: $e');
             return <Map<String, dynamic>>[];
           }
         });
@@ -70,7 +67,6 @@ class ChatService {
         .collection('messages')
         .snapshots()
         .handleError((error) {
-          print('Error loading messages: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -80,7 +76,6 @@ class ChatService {
                   try {
                     return MessageModel.fromFirestore(doc);
                   } catch (e) {
-                    print('Error parsing message ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -92,7 +87,6 @@ class ChatService {
             
             return messages;
           } catch (e) {
-            print('Error processing messages: $e');
             return <MessageModel>[];
           }
         });
@@ -131,7 +125,6 @@ class ChatService {
       // Check if chat exists
       final chatDoc = await _firestore.collection('chats').doc(chatId).get();
       if (!chatDoc.exists) {
-        print('Chat does not exist: $chatId');
         return;
       }
       
@@ -157,7 +150,7 @@ class ChatService {
         await batch.commit();
       }
     } catch (e) {
-      print('Error marking messages as read: $e');
+      // Silently fail - messages already marked as read or chat doesn't exist
     }
   }
   
@@ -190,7 +183,6 @@ class ChatService {
         'editedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Error editing message: $e');
       rethrow;
     }
   }
@@ -204,7 +196,6 @@ class ChatService {
           .doc(messageId)
           .delete();
     } catch (e) {
-      print('Error deleting message: $e');
       rethrow;
     }
   }
@@ -225,7 +216,6 @@ class ChatService {
       final userDoc = await _firestore.collection('users').doc(otherUserId).get();
       return userDoc.data()?['name'] ?? 'User';
     } catch (e) {
-      print('Error getting other user name: $e');
       return 'User';
     }
   }
@@ -288,7 +278,6 @@ class ChatService {
       
       await batch.commit();
     } catch (e) {
-      print('Error sending message: $e');
       rethrow;
     }
   }

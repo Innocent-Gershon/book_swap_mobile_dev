@@ -234,7 +234,6 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         return;
       } catch (e) {
         retryCount++;
-        print('Send message attempt $retryCount failed: $e');
         
         if (retryCount >= maxRetries) {
           _messageController.text = messageText;

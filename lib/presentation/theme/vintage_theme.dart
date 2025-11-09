@@ -15,15 +15,15 @@ class VintageTheme {
 
   static ThemeData get theme => ThemeData(
     primarySwatch: MaterialColor(0xFF8B4513, {
-      50: antiqueBrown.withOpacity(0.1),
-      100: antiqueBrown.withOpacity(0.2),
-      200: antiqueBrown.withOpacity(0.3),
-      300: antiqueBrown.withOpacity(0.4),
-      400: antiqueBrown.withOpacity(0.5),
+      50: antiqueBrown.withValues(alpha: 0.1),
+      100: antiqueBrown.withValues(alpha: 0.2),
+      200: antiqueBrown.withValues(alpha: 0.3),
+      300: antiqueBrown.withValues(alpha: 0.4),
+      400: antiqueBrown.withValues(alpha: 0.5),
       500: antiqueBrown,
-      600: antiqueBrown.withOpacity(0.7),
-      700: antiqueBrown.withOpacity(0.8),
-      800: antiqueBrown.withOpacity(0.9),
+      600: antiqueBrown.withValues(alpha: 0.7),
+      700: antiqueBrown.withValues(alpha: 0.8),
+      800: antiqueBrown.withValues(alpha: 0.9),
       900: darkBrown,
     }),
     scaffoldBackgroundColor: parchment,
@@ -116,7 +116,7 @@ class VintageTheme {
         backgroundColor: antiqueBrown,
         foregroundColor: cream,
         elevation: 4,
-        shadowColor: darkBrown.withOpacity(0.5),
+        shadowColor: darkBrown.withValues(alpha: 0.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         textStyle: GoogleFonts.crimsonText(
           fontSize: 18,
@@ -129,10 +129,10 @@ class VintageTheme {
   static BoxDecoration get vintageCardDecoration => BoxDecoration(
     color: oldPaper,
     borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: antiqueBrown.withOpacity(0.3), width: 1),
+    border: Border.all(color: antiqueBrown.withValues(alpha: 0.3), width: 1),
     boxShadow: [
       BoxShadow(
-        color: antiqueBrown.withOpacity(0.2),
+        color: antiqueBrown.withValues(alpha: 0.2),
         blurRadius: 8,
         offset: const Offset(2, 4),
       ),
@@ -145,7 +145,7 @@ class VintageTheme {
     border: Border.all(color: goldAccent, width: 2),
     boxShadow: [
       BoxShadow(
-        color: antiqueBrown.withOpacity(0.3),
+        color: antiqueBrown.withValues(alpha: 0.3),
         blurRadius: 12,
         offset: const Offset(0, 6),
       ),

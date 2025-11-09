@@ -191,7 +191,7 @@ class _EditBookPageState extends ConsumerState<EditBookPage> {
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
                         color: _selectedCondition == condition
-                            ? AppColors.accent.withOpacity(0.2)
+                            ? AppColors.accent.withValues(alpha: 0.2)
                             : AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -201,6 +201,7 @@ class _EditBookPageState extends ConsumerState<EditBookPage> {
                           width: 2,
                         ),
                       ),
+                      // ignore: deprecated_member_use
                       child: RadioListTile<BookCondition>(
                         title: Text(
                           _getConditionText(condition),
@@ -211,7 +212,9 @@ class _EditBookPageState extends ConsumerState<EditBookPage> {
                           ),
                         ),
                         value: condition,
+                        // ignore: deprecated_member_use
                         groupValue: _selectedCondition,
+                        // ignore: deprecated_member_use
                         onChanged: (value) {
                           setState(() {
                             _selectedCondition = value!;

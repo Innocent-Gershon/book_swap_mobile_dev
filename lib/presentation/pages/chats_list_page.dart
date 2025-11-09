@@ -224,8 +224,6 @@ class _ChatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final participants = List<String>.from(chat['participants'] ?? []);
-    final otherUserId = participants.firstWhere((id) => id != currentUserId, orElse: () => '');
     final lastMessage = chat['lastMessage'] ?? '';
     final lastMessageAt = chat['lastMessageAt'];
     final unreadCount = chat['unreadCount_$currentUserId'] ?? 0;

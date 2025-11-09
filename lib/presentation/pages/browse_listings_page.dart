@@ -112,12 +112,8 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
             stream: NotificationService().getUnreadCountStream(currentUser.uid),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                print('Error in notification stream: ${snapshot.error}');
               }
               final unreadCount = snapshot.data ?? 0;
-              print('Building notification badge with count: $unreadCount');
-              print('Snapshot connectionState: ${snapshot.connectionState}');
-              print('Snapshot hasData: ${snapshot.hasData}');
               return Stack(
                 clipBehavior: Clip.none,
                 children: [

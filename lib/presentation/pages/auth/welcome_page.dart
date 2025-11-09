@@ -151,7 +151,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w400,
-                                    color: Colors.white.withOpacity(0.85),
+                                    color: Colors.white.withValues(alpha: 0.85),
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -172,12 +172,12 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
                                 borderRadius: BorderRadius.circular(32),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 30,
                                     offset: const Offset(0, 15),
                                   ),
                                   BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.1),
+                                    color: AppColors.accent.withValues(alpha: 0.1),
                                     blurRadius: 40,
                                     offset: const Offset(0, 25),
                                   ),
@@ -335,7 +335,7 @@ class _FloatingParticleState extends State<_FloatingParticle>
             width: 4 + (widget.index % 3) * 2,
             height: 4 + (widget.index % 3) * 2,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1 + (_animation.value * 0.2)),
+              color: Colors.white.withValues(alpha: 0.1 + (_animation.value * 0.2)),
               shape: BoxShape.circle,
             ),
           ),
@@ -354,7 +354,7 @@ class _EnhancedBackgroundPainter extends CustomPainter {
       ..strokeWidth = 1.0;
 
     // Draw a curved path
-    paint.color = Colors.white.withOpacity(0.05);
+    paint.color = Colors.white.withValues(alpha: 0.05);
     final path = Path();
     path.moveTo(0, size.height * 0.3);
     path.quadraticBezierTo(
@@ -366,7 +366,7 @@ class _EnhancedBackgroundPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Draw some rectangles
-    paint.color = Colors.white.withOpacity(0.08);
+    paint.color = Colors.white.withValues(alpha: 0.08);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(size.width * 0.1, size.height * 0.15, 60, 90),
@@ -384,7 +384,7 @@ class _EnhancedBackgroundPainter extends CustomPainter {
     );
 
     // Draw some circles
-    paint.color = Colors.white.withOpacity(0.03);
+    paint.color = Colors.white.withValues(alpha: 0.03);
     canvas.drawCircle(Offset(size.width * 0.2, size.height * 0.8), 40, paint);
     canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.2), 25, paint);
   }

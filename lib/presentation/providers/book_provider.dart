@@ -24,7 +24,6 @@ class BookService {
         .collection('books')
         .snapshots()
         .handleError((error) {
-          print('Error loading books: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -34,7 +33,6 @@ class BookService {
                   try {
                     return BookModel.fromFirestore(doc);
                   } catch (e) {
-                    print('Error parsing book ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -43,7 +41,6 @@ class BookService {
             books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
             return books;
           } catch (e) {
-            print('Error processing books: $e');
             return <BookModel>[];
           }
         });
@@ -54,7 +51,6 @@ class BookService {
         .collection('books')
         .snapshots()
         .handleError((error) {
-          print('Error loading browse books: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -64,7 +60,6 @@ class BookService {
                   try {
                     return BookModel.fromFirestore(doc);
                   } catch (e) {
-                    print('Error parsing book ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -74,7 +69,6 @@ class BookService {
             books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
             return books;
           } catch (e) {
-            print('Error processing browse books: $e');
             return <BookModel>[];
           }
         });
@@ -86,7 +80,6 @@ class BookService {
         .where('ownerId', isEqualTo: userId)
         .snapshots()
         .handleError((error) {
-          print('Error loading user books: $error');
           return const Stream.empty();
         })
         .map((snapshot) {
@@ -96,7 +89,6 @@ class BookService {
                   try {
                     return BookModel.fromFirestore(doc);
                   } catch (e) {
-                    print('Error parsing book ${doc.id}: $e');
                     return null;
                   }
                 })
@@ -105,7 +97,6 @@ class BookService {
             books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
             return books;
           } catch (e) {
-            print('Error processing user books: $e');
             return <BookModel>[];
           }
         });
