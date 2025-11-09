@@ -23,11 +23,10 @@ class NotificationService {
     });
   }
 
-  Stream<List<Map<String, dynamic>>> getUnreadNotificationsStream(String userId) {
+  Stream<List<Map<String, dynamic>>> getNotificationsStream(String userId) {
     return _firestore
         .collection('notifications')
         .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false)
         .snapshots()
         .handleError((error) {
           print('Error loading notifications: $error');
@@ -52,6 +51,16 @@ class NotificationService {
             return <Map<String, dynamic>>[];
           }
         });
+  }
+
+  Stream<List<Map<String, dynamic>>> getUnreadNotificationsStream(String userId) {
+    return getNotificationsStream(userId).map(
+      (notifications) => notifications.where((n) => n['isRead'] == false).toList(),
+    );
+  }
+
+  Stream<int> getUnreadCountStream(String userId) {
+    return getUnreadNotificationsStream(userId).map((notifications) => notifications.length);
   }
 
   Future<void> markAsRead(String notificationId) async {

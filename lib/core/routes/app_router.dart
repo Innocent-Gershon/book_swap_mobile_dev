@@ -6,6 +6,7 @@ import 'package:book_swap/presentation/pages/main_wrapper.dart';
 import 'package:book_swap/presentation/pages/my_listings_page.dart';
 import 'package:book_swap/presentation/pages/post_book_page.dart';
 import 'package:book_swap/presentation/pages/settings_page.dart';
+import 'package:book_swap/presentation/pages/notifications_page.dart';
 import 'package:book_swap/presentation/pages/auth/welcome_page.dart';
 import 'package:book_swap/presentation/pages/auth/signin_page.dart';
 import 'package:book_swap/presentation/pages/auth/signup_page.dart';
@@ -126,6 +127,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final chatId = state.pathParameters['chatId']!;
           return ChatDetailPage(chatId: chatId);
         },
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsPage(),
       ),
     ],
     redirect: (context, state) {

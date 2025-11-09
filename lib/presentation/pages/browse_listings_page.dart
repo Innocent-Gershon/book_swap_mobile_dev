@@ -6,6 +6,7 @@ import '../providers/book_provider.dart';
 import '../theme/app_colors.dart';
 import '../../data/models/book_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 import '../widgets/book/enhanced_book_card.dart';
 
 final swapServiceProvider = Provider((ref) => SwapService());
@@ -84,6 +85,8 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
   }
 
   Widget _buildHeader() {
+    final currentUser = AuthService.currentUser;
+    
     return Row(
       children: [
         Container(
@@ -106,6 +109,60 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
             ],
           ),
         ),
+        if (currentUser != null)
+          StreamBuilder<int>(
+            stream: NotificationService().getUnreadCountStream(currentUser.uid),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+                    onPressed: () => context.push('/notifications'),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Center(
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.search, color: Colors.white, size: 22),
           onPressed: () => setState(() => _isSearching = true),

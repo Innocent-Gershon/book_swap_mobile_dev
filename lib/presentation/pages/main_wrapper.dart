@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../pages/widgets/theme/app_colors.dart';
 import '../../services/auth_service.dart';
-import '../../services/notification_service.dart';
-import '../widgets/notification_dialog.dart';
 import '../providers/chat_provider.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
@@ -17,37 +15,6 @@ class MainWrapper extends ConsumerStatefulWidget {
 }
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
-  bool _hasShownNotification = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkForNotifications();
-  }
-
-  void _checkForNotifications() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final currentUser = AuthService.currentUser;
-    if (currentUser == null || _hasShownNotification) return;
-
-    NotificationService().getUnreadNotificationsStream(currentUser.uid).listen((notifications) {
-      if (notifications.isNotEmpty && !_hasShownNotification && mounted) {
-        _hasShownNotification = true;
-        final notification = notifications.first;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => NotificationDialog(
-            notification: notification,
-            onDismiss: () {
-              setState(() => _hasShownNotification = false);
-            },
-          ),
-        );
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

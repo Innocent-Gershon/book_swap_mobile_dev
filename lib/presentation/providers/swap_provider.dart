@@ -112,12 +112,26 @@ class SwapService {
     
     await batch.commit();
     
+    // Get requester name
+    final requesterDoc = await _firestore.collection('users').doc(requesterId).get();
+    final requesterName = requesterDoc.data()?['name'] ?? 'Someone';
+    
     // Create notification for book owner
     await NotificationService().createNotification(
       userId: ownerId,
       type: 'swap_request',
       title: 'New Swap Request',
-      message: 'Someone wants to swap your book "$bookTitle"',
+      message: '$requesterName wants to swap your book. Go to My Listings to accept or reject.',
+      swapId: swapRef.id,
+      bookTitle: bookTitle,
+    );
+    
+    // Create notification for requester (confirmation)
+    await NotificationService().createNotification(
+      userId: requesterId,
+      type: 'swap_request_sent',
+      title: 'Swap Request Sent',
+      message: 'Your request for "$bookTitle" has been sent. Waiting for owner approval.',
       swapId: swapRef.id,
       bookTitle: bookTitle,
     );
