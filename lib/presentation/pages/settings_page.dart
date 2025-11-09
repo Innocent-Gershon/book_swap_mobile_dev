@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../providers/theme_provider.dart';
+import 'edit_profile_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -291,18 +292,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   void _showEditProfileDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: const Text('Profile editing feature coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const EditProfilePage()),
     );
   }
 
