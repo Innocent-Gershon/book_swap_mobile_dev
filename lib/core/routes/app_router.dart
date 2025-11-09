@@ -129,7 +129,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
-      if (isLoggedIn.value && (state.fullPath == AppRoutes.welcome || state.fullPath == AppRoutes.signin || state.fullPath == AppRoutes.signup)) {
+      final user = AuthService.currentUser;
+      if (isLoggedIn.value && (state.fullPath == AppRoutes.welcome || state.fullPath == AppRoutes.signin)) {
+        return AppRoutes.browseListings;
+      }
+      if (isLoggedIn.value && state.fullPath == AppRoutes.signup && user != null && user.emailVerified) {
         return AppRoutes.browseListings;
       }
       return null;

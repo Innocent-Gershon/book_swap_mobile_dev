@@ -43,8 +43,8 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final booksAsync = ref.watch(booksStreamProvider);
     final currentUser = AuthService.currentUser;
+    final booksAsync = ref.watch(booksStreamProvider);
 
     return Scaffold(
       body: Container(
@@ -148,7 +148,7 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
     );
   }
 
-  Widget _buildBooksList(AsyncValue<List<BookModel>> booksAsync, currentUser) {
+  Widget _buildBooksList(AsyncValue<List<BookModel>> booksAsync, dynamic currentUser) {
     return booksAsync.when(
       data: (books) {
         final filteredBooks = _filterBooks(books);
@@ -202,22 +202,33 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
           itemCount: filteredBooks.length,
           itemBuilder: (context, index) {
             final book = filteredBooks[index];
+            final isPending = book.status.toString().split('.').last == 'pending';
+            final isOwnBook = currentUser != null && book.ownerId == currentUser.uid;
+            
+            Widget? actionButton;
+            if (!isOwnBook) {
+              actionButton = ElevatedButton.icon(
+                onPressed: isPending ? null : () => _requestSwap(book),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isPending ? Colors.grey[400] : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  disabledBackgroundColor: Colors.grey[400],
+                  disabledForegroundColor: Colors.white,
+                ),
+                icon: Icon(isPending ? Icons.lock_outline : Icons.swap_horiz, size: 18),
+                label: Text(
+                  isPending ? 'Unavailable' : 'Request Swap',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              );
+            }
+            
             return EnhancedBookCard(
               book: book,
               showOwnerInfo: true,
-              actionButton: currentUser != null && book.ownerId != currentUser.uid
-                  ? ElevatedButton.icon(
-                      onPressed: () => _requestSwap(book),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      icon: const Icon(Icons.swap_horiz, size: 18),
-                      label: const Text('Request Swap', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                    )
-                  : null,
+              actionButton: actionButton,
             );
           },
         );
@@ -227,11 +238,18 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)]),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.auto_stories, size: 48, color: Color(0xFF1A1B3A)),
+            ),
             const SizedBox(height: 16),
-            const Text('Error loading books', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Text('No Books Available', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A))),
             const SizedBox(height: 8),
-            Text('$error', style: const TextStyle(fontSize: 16, color: Colors.red)),
+            Text('Be the first to share a book!', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
           ],
         ),
       ),

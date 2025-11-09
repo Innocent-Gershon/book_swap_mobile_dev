@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:book_swap/services/auth_service.dart';
 import 'package:book_swap/widgets/auth_dialogs.dart';
 import 'package:book_swap/presentation/pages/widgets/theme/app_colors.dart';
@@ -21,6 +22,8 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   late AnimationController _glowController;
   late Animation<Color?> _glowAnimation;
@@ -69,13 +72,11 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
 
     if (!mounted) return;
 
-    if (result.isSuccess) {
-      // Show success dialog and then navigate to sign-in page, prompting email verification
-      AuthDialogs.showSuccessDialog(
-        context,
-        result.message, // This message comes from AuthService: "Account created! Please verify your email to log in."
-        onOk: () => context.go('/signin'),
-      );
+    if (result.isSuccess && result.user != null) {
+      // Show email verification dialog immediately - it will handle navigation
+      if (mounted) {
+        _showEmailVerificationDialog(result.user!);
+      }
     } else {
       // Handle specific error types from AuthService for better user feedback
       switch (result.type) {
@@ -93,6 +94,15 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
           AuthDialogs.showErrorDialog(context, result.message);
       }
     }
+  }
+
+  Future<void> _showEmailVerificationDialog(User user) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: false,
+      builder: (dialogContext) => _EmailVerificationDialog(user: user),
+    );
   }
 
   @override
@@ -186,7 +196,7 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Password',
@@ -194,6 +204,13 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.1),
                           prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -208,7 +225,7 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _confirmPasswordController,
-                        obscureText: true,
+                        obscureText: _obscureConfirmPassword,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Confirm Password',
@@ -216,6 +233,13 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.1),
                           prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -267,6 +291,121 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+class _EmailVerificationDialog extends StatefulWidget {
+  final User user;
+  const _EmailVerificationDialog({required this.user});
+
+  @override
+  State<_EmailVerificationDialog> createState() => _EmailVerificationDialogState();
+}
+
+class _EmailVerificationDialogState extends State<_EmailVerificationDialog> {
+  bool _isChecking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startVerificationCheck();
+  }
+
+  void _startVerificationCheck() async {
+    while (mounted) {
+      await Future.delayed(const Duration(seconds: 3));
+      try {
+        await FirebaseAuth.instance.currentUser?.reload();
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null && currentUser.emailVerified && mounted) {
+          Navigator.of(context).pop();
+          if (mounted) {
+            context.go('/browse');
+          }
+          return;
+        }
+      } catch (e) {
+        // Continue checking even if reload fails
+      }
+    }
+  }
+
+  Future<void> _resendEmail() async {
+    setState(() => _isChecking = true);
+    try {
+      await widget.user.sendEmailVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Verification email sent!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send email: $e')),
+        );
+      }
+    }
+    setState(() => _isChecking = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.accent, AppColors.accent.withValues(alpha: 0.8)]),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.email_outlined, size: 48, color: Color(0xFF1E2038)),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Verify Your Email',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1A1B3A)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'We sent a verification link to\n${widget.user.email}',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please check your inbox and click the link to continue.',
+              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+            const SizedBox(height: 12),
+            Text(
+              'Waiting for verification...',
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: _isChecking ? null : _resendEmail,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Resend Email'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
       ),
     );
   }

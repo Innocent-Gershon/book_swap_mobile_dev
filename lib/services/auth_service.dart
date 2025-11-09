@@ -64,8 +64,9 @@ class AuthService {
           'emailVerified': false,
         });
 
+        // Keep user signed in to allow verification dialog to work
         return AuthResult.success(
-          message: 'Account created! Please verify your email to sign in.',
+          message: 'Account created! Please verify your email.',
           user: user,
         );
       }

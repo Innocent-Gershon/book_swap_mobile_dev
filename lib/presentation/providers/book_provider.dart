@@ -22,14 +22,23 @@ class BookService {
   Stream<List<BookModel>> getBooksStream() {
     return _firestore
         .collection('books')
-        .where('status', isEqualTo: 'available')
         .snapshots()
         .map((snapshot) {
           final books = snapshot.docs
-              .map((doc) => BookModel.fromFirestore(doc))
+              .map((doc) {
+                try {
+                  return BookModel.fromFirestore(doc);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<BookModel>()
               .toList();
           books.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return books;
+        })
+        .handleError((error) {
+          return <BookModel>[];
         });
   }
 

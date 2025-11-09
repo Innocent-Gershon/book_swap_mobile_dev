@@ -19,6 +19,7 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   late AnimationController _glowController;
   late Animation<Color?> _glowAnimation;
@@ -203,7 +204,7 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Password',
@@ -211,6 +212,13 @@ class _SignInPageState extends State<SignInPage> with SingleTickerProviderStateM
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.1),
                           prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,

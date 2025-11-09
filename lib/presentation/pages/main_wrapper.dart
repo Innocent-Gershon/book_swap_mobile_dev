@@ -52,7 +52,7 @@ class _BottomNavBar extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -113,12 +113,12 @@ class _NavItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected 
                 ? AppColors.accent.withValues(alpha: 0.25)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -126,13 +126,13 @@ class _NavItem extends StatelessWidget {
               Icon(
                 isSelected ? activeIcon : icon,
                 color: isSelected ? AppColors.accent : Colors.white.withValues(alpha: 0.7),
-                size: 26,
+                size: 22,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   color: isSelected ? AppColors.accent : Colors.white.withValues(alpha: 0.7),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
