@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/book_provider.dart';
+import '../providers/swap_provider.dart';
 import '../theme/app_colors.dart';
 import '../../data/models/book_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
 import '../widgets/book/enhanced_book_card.dart';
-
-final swapServiceProvider = Provider((ref) => SwapService());
 
 class BrowseListingsPage extends ConsumerStatefulWidget {
   const BrowseListingsPage({super.key});
@@ -113,7 +111,13 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
           StreamBuilder<int>(
             stream: NotificationService().getUnreadCountStream(currentUser.uid),
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                print('Error in notification stream: ${snapshot.error}');
+              }
               final unreadCount = snapshot.data ?? 0;
+              print('Building notification badge with count: $unreadCount');
+              print('Snapshot connectionState: ${snapshot.connectionState}');
+              print('Snapshot hasData: ${snapshot.hasData}');
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -344,36 +348,4 @@ class _BrowseListingsPageState extends ConsumerState<BrowseListingsPage> {
   }
 }
 
-class SwapService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  Future<void> createSwapRequest({
-    required String bookId,
-    required String requesterId,
-    required String ownerId,
-  }) async {
-    final batch = _firestore.batch();
-    
-    final swapRef = _firestore.collection('swaps').doc();
-    batch.set(swapRef, {
-      'id': swapRef.id,
-      'bookId': bookId,
-      'requesterUserId': requesterId,
-      'ownerUserId': ownerId,
-      'status': 'pending',
-      'initiatedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    
-    batch.update(
-      _firestore.collection('books').doc(bookId),
-      {
-        'status': 'pending',
-        'swapRequesterId': requesterId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
-    
-    await batch.commit();
-  }
-}
+

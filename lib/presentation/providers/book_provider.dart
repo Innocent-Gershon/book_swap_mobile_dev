@@ -135,6 +135,8 @@ class BookService {
     }
   }
 
+  Future<BookModel?> getBookById(String bookId) => getBook(bookId);
+
   Future<void> requestSwap(String bookId, String requesterId) async {
     final batch = _firestore.batch();
     

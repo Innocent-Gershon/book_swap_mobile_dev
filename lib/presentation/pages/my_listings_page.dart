@@ -423,26 +423,63 @@ class _MyOffersTab extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Swap Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 4),
-                          Text('Book ID: ${swap.bookId}', style: TextStyle(fontSize: 13, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: _getSwapStatusGradient(swap.status)),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              swap.status.label.toUpperCase(),
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
-                              maxLines: 1,
-                            ),
-                          ),
-                        ],
+                      child: FutureBuilder(
+                        future: ref.read(bookServiceProvider).getBookById(swap.bookId),
+                        builder: (context, bookSnapshot) {
+                          final book = bookSnapshot.data;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                book?.title ?? 'Loading...',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1A1B3A),
+                                  letterSpacing: 0.3,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                book != null ? 'by ${book.author}' : 'Fetching book details...',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[700],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(colors: _getSwapStatusGradient(swap.status)),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _getSwapStatusGradient(swap.status)[0].withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  swap.status.label.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                     if (swap.status.label == 'accepted')
@@ -586,13 +623,38 @@ class _IncomingRequestsTab extends ConsumerWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Swap Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1B3A)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 4),
-                              Text('Book ID: ${request.bookId}', style: TextStyle(fontSize: 13, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
-                            ],
+                          child: FutureBuilder(
+                            future: ref.read(bookServiceProvider).getBookById(request.bookId),
+                            builder: (context, bookSnapshot) {
+                              final book = bookSnapshot.data;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    book?.title ?? 'Loading...',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1A1B3A),
+                                      letterSpacing: 0.3,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    book != null ? 'by ${book.author}' : 'Fetching book details...',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[700],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                         Container(
@@ -608,8 +670,8 @@ class _IncomingRequestsTab extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    if (isPending) ...[
-                      const SizedBox(height: 14),
+                    const SizedBox(height: 14),
+                    if (isPending)
                       Row(
                         children: [
                           Expanded(
@@ -726,8 +788,19 @@ class _IncomingRequestsTab extends ConsumerWidget {
                             ),
                           ),
                         ],
+                      )
+                    else if (request.status.label == 'accepted')
+                      ElevatedButton.icon(
+                        onPressed: () => _openChat(context, ref, request.requesterUserId),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.chat_bubble, size: 18),
+                        label: const Text('Chat', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -780,6 +853,24 @@ class _IncomingRequestsTab extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _openChat(BuildContext context, WidgetRef ref, String otherUserId) async {
+    try {
+      final currentUser = AuthService.currentUser;
+      if (currentUser == null) return;
+      
+      final chatId = await ref.read(chatServiceProvider).createOrGetChat(currentUser.uid, otherUserId);
+      if (context.mounted) {
+        context.push('/chat/$chatId');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to open chat: $e'), backgroundColor: Colors.red),
         );
       }
     }

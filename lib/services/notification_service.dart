@@ -11,6 +11,7 @@ class NotificationService {
     required String swapId,
     String? bookTitle,
   }) async {
+    print('Creating notification for user $userId: $title');
     await _firestore.collection('notifications').add({
       'userId': userId,
       'type': type,
@@ -21,6 +22,7 @@ class NotificationService {
       'isRead': false,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    print('Notification created successfully');
   }
 
   Stream<List<Map<String, dynamic>>> getNotificationsStream(String userId) {
@@ -60,7 +62,10 @@ class NotificationService {
   }
 
   Stream<int> getUnreadCountStream(String userId) {
-    return getUnreadNotificationsStream(userId).map((notifications) => notifications.length);
+    return getUnreadNotificationsStream(userId).map((notifications) {
+      print('Unread notifications count for $userId: ${notifications.length}');
+      return notifications.length;
+    });
   }
 
   Future<void> markAsRead(String notificationId) async {

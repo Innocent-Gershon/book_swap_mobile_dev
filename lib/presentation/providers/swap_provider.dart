@@ -137,6 +137,11 @@ class SwapService {
     );
   }
 
+  Future<Map<String, dynamic>> getSwapById(String swapId) async {
+    final swapDoc = await _firestore.collection('swaps').doc(swapId).get();
+    return swapDoc.data() ?? {};
+  }
+
   Future<void> updateSwapStatus(String swapId, String status) async {
     final batch = _firestore.batch();
     
