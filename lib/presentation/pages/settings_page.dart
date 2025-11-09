@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../providers/theme_provider.dart';
@@ -38,55 +39,73 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           // Profile Section
           if (currentUser != null) ...[
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots(),
+              builder: (context, snapshot) {
+                final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                final displayName = userData?['name'] ?? currentUser.displayName ?? 'User';
+                final photoUrl = userData?['photoUrl'] as String?;
+                
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
                     ),
-                    child: Icon(Icons.person, size: 32, color: AppColors.primary),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          currentUser.displayName ?? 'User',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textLight),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          shape: BoxShape.circle,
+                          image: photoUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(photoUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          currentUser.email ?? '',
-                          style: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+                        child: photoUrl == null
+                            ? Icon(Icons.person, size: 32, color: AppColors.primary)
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textLight),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              currentUser.email ?? '',
+                              style: TextStyle(color: AppColors.textLight.withValues(alpha: 0.8)),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: currentUser.emailVerified ? AppColors.success : AppColors.warning,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                currentUser.emailVerified ? 'Verified' : 'Not Verified',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: currentUser.emailVerified ? AppColors.success : AppColors.warning,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            currentUser.emailVerified ? 'Verified' : 'Not Verified',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
             const SizedBox(height: 24),
           ],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../services/auth_service.dart';
 import '../theme/app_colors.dart';
 
@@ -18,6 +21,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
   final _locationController = TextEditingController();
   bool _isLoading = false;
   bool _isSaving = false;
+  File? _imageFile;
+  String? _imageUrl;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -57,6 +62,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
           _nameController.text = data['name'] ?? '';
           _bioController.text = data['bio'] ?? '';
           _locationController.text = data['location'] ?? '';
+          _imageUrl = data['photoUrl'];
         }
       } catch (e) {
         if (mounted) {
@@ -120,46 +126,64 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
                             ),
                             const SizedBox(height: 20),
                             Center(
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    width: 120,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        colors: [AppColors.accent, AppColors.accentLight],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppColors.accent.withValues(alpha: 0.5),
-                                          blurRadius: 30,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
+                              child: GestureDetector(
+                                onTap: _showImageSourceDialog,
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: 120,
+                                      height: 120,
                                       decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [AppColors.primary, AppColors.primaryDark],
-                                        ),
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 3),
+                                        gradient: _imageFile == null && _imageUrl == null
+                                            ? LinearGradient(
+                                                colors: [AppColors.accent, AppColors.accentLight],
+                                              )
+                                            : null,
+                                        image: _imageFile != null
+                                            ? DecorationImage(
+                                                image: FileImage(_imageFile!),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : _imageUrl != null
+                                                ? DecorationImage(
+                                                    image: NetworkImage(_imageUrl!),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : null,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.accent.withValues(alpha: 0.5),
+                                            blurRadius: 30,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
                                       ),
-                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                      child: _imageFile == null && _imageUrl == null
+                                          ? Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: Colors.white.withValues(alpha: 0.9),
+                                            )
+                                          : null,
                                     ),
-                                  ),
-                                ],
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [AppColors.primary, AppColors.primaryDark],
+                                          ),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 3),
+                                        ),
+                                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             const SizedBox(height: 30),
@@ -389,6 +413,195 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
     );
   }
 
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1A1B3A),
+              const Color(0xFF2D1B69),
+            ],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Choose Photo',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildImageSourceOption(
+                  icon: Icons.camera_alt,
+                  label: 'Take Photo',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildImageSourceOption(
+                  icon: Icons.photo_library,
+                  label: 'Choose from Gallery',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                if (_imageFile != null || _imageUrl != null) ..[
+                  const SizedBox(height: 12),
+                  _buildImageSourceOption(
+                    icon: Icons.delete,
+                    label: 'Remove Photo',
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() {
+                        _imageFile = null;
+                        _imageUrl = null;
+                      });
+                    },
+                    isDestructive: true,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDestructive
+                        ? Colors.red.withValues(alpha: 0.2)
+                        : AppColors.accent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDestructive ? Colors.red : AppColors.accent,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDestructive ? Colors.red : Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _uploadImage() async {
+    if (_imageFile == null) return _imageUrl;
+
+    final currentUser = AuthService.currentUser;
+    if (currentUser == null) return null;
+
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_photos')
+          .child('${currentUser.uid}.jpg');
+
+      await ref.putFile(_imageFile!);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -401,13 +614,26 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> with SingleTi
     }
 
     try {
-      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set({
+      String? photoUrl = await _uploadImage();
+
+      final data = {
         'name': _nameController.text.trim(),
         'bio': _bioController.text.trim(),
         'location': _locationController.text.trim(),
         'email': currentUser.email,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+
+      if (photoUrl != null) {
+        data['photoUrl'] = photoUrl;
+      } else if (_imageFile == null && _imageUrl == null) {
+        data['photoUrl'] = FieldValue.delete();
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).set(
+        data,
+        SetOptions(merge: true),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
